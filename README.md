@@ -1,0 +1,70 @@
+# 🎧 Spotify Compatibility App
+
+**Projeto Interdisciplinar (PID) – CEFET-MG**  
+Equipe: Davi Gumarães, João Paulo Lacerda e João Victor de Carvalho / Ano: 2025 / Repositório privado
+
+---
+
+## 📌 Descrição
+
+Este projeto tem como objetivo desenvolver uma **aplicação web** que analisa a **compatibilidade musical entre usuários da plataforma Spotify**, com base em seus hábitos de escuta.
+
+A proposta envolve a coleta de dados via **API do Spotify**, aplicação de **técnicas de análise de dados** (como clustering e métricas de similaridade), e apresentação dos resultados por meio de uma interface interativa.
+
+---
+
+## 🎯 Objetivo
+
+Responder à seguinte pergunta de pesquisa:
+
+> *"De que maneira é possível representar, por meio de uma aplicação web, a compatibilidade musical entre usuários da plataforma Spotify, a partir da análise automatizada de seus dados de escuta, com o objetivo de promover interações baseadas em afinidade musical?"*
+
+---
+
+## 🧪 Tecnologias
+
+- **Backend**: Python + FastAPI
+- **Frontend**: React + Plotly.js
+- **Análise de Dados**: Pandas, NumPy, scikit-learn
+- **Banco de Dados**: PostgreSQL
+- **Autenticação**: OAuth2 com a API do Spotify
+- **Hospedagem**: (a definir – Railway, Render, ou Vercel)
+
+---
+
+## 🧭 Estrutura do projeto
+
+```yaml
+spotify-compatibility-app/
+├── backend/ # Código da API em FastAPI
+├── frontend/ # Aplicação web em React
+├── data/ # Dados de exemplo, testes
+├── docs/ # Relatório, anotações, imagens
+```
+
+---
+
+## ⚙️ Como executar (instruções básicas)
+
+---
+
+## 🔒 Aviso
+
+Este repositório é privado e de uso estritamente acadêmico, como parte do Projeto Interdisciplinar do curso técnico em informática do CEFET-MG.
+
+Todos os direitos sobre o conteúdo aqui presente são reservados à equipe responsável.
+O uso, cópia ou redistribuição não são autorizados sem permissão explícita.
+
+---
+
+## 📚 Documentação
+
+A documentação técnica e o relatório acadêmico estão sendo desenvolvidos na pasta /docs.
+
+---
+
+## ✨ Futuro
+
+Este projeto foi pensado com potencial de uso prático fora do ambiente acadêmico, e poderá ser explorado comercialmente no futuro, dependendo da viabilidade técnica e do interesse da equipe.
+
+---
