@@ -48,23 +48,6 @@ spotify-compatibility-app/
 
 ---
 
-## 🔒 Aviso
-
-Este repositório é privado e de uso estritamente acadêmico, como parte do Projeto Interdisciplinar do curso técnico em informática do CEFET-MG.
-
-Todos os direitos sobre o conteúdo aqui presente são reservados à equipe responsável.
-O uso, cópia ou redistribuição não são autorizados sem permissão explícita.
-
----
-
 ## 📚 Documentação
 
 A documentação técnica e o relatório acadêmico estão sendo desenvolvidos na pasta /docs.
-
----
-
-## ✨ Futuro
-
-Este projeto foi pensado com potencial de uso prático fora do ambiente acadêmico, e poderá ser explorado comercialmente no futuro, dependendo da viabilidade técnica e do interesse da equipe.
-
----
