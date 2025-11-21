@@ -130,7 +130,7 @@ npm start
 1. Acesse [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Crie uma nova aplicação
 3. Configure as URLs de redirecionamento:
-   - `http://localhost:8000/auth/callback`
+   - `http://127.0.0.1:8000/callback`
 4. Copie o Client ID e Client Secret para o arquivo `.env`
 
 ---

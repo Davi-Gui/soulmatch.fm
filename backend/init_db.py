@@ -6,7 +6,7 @@ Execute este script para criar as tabelas necessárias
 
 import os
 import sys
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 # Add the app directory to the Python path
@@ -42,7 +42,8 @@ def check_database_connection():
     try:
         engine = create_engine(settings.database_url)
         with engine.connect() as connection:
-            connection.execute("SELECT 1")
+            # CORREÇÃO AQUI: Usando text() para envolver a query
+            connection.execute(text("SELECT 1"))
         print("✅ Conexão com banco de dados estabelecida com sucesso!")
         return True
     except Exception as e:
