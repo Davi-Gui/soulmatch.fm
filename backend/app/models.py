@@ -21,7 +21,11 @@ class User(Base):
     
     # Relationships
     listening_history = relationship("ListeningHistory", back_populates="user")
-    compatibility_scores = relationship("CompatibilityScore", back_populates="user1")
+    compatibility_scores = relationship(
+        "CompatibilityScore", 
+        back_populates="user1",
+        foreign_keys="[CompatibilityScore.user1_id]"
+    )
 
 class Track(Base):
     __tablename__ = "tracks"

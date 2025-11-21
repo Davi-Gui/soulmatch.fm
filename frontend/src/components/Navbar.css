@@ -3,9 +3,8 @@
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(29, 185, 84, 0.1);
+  background: #000000; /* Preto total para a barra */
+  border-bottom: 1px solid #282828; /* Borda sutil cinza escuro */
   z-index: 1000;
   height: 80px;
 }
@@ -51,21 +50,21 @@
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  color: #333;
-  font-weight: 500;
+  color: #b3b3b3; /* Cinza clássico do Spotify */
+  font-weight: 700;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: 4px;
   transition: all 0.2s ease;
 }
 
 .navbar-link:hover {
-  background: rgba(29, 185, 84, 0.1);
-  color: #1db954;
+  color: #ffffff; /* Branco no hover */
+  background-color: #282828; /* Fundo sutil no hover */
 }
 
 .navbar-link.active {
-  background: #1db954;
-  color: white;
+  color: #ffffff;
+  background-color: #282828; /* Indicação de ativo mais sutil */
 }
 
 .navbar-user {
@@ -83,8 +82,8 @@
 }
 
 .user-name {
-  font-weight: 500;
-  color: #333;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .logout-btn {

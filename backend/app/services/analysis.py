@@ -54,11 +54,13 @@ class AnalysisService:
                     ])
             
             if not audio_features:
-                raise ValueError("Dados de características de áudio insuficientes")
-            
-            # Calculate averages
-            audio_features_array = np.array(audio_features)
-            avg_features = np.mean(audio_features_array, axis=0)
+                # CORREÇÃO: Se não houver dados, usa zeros em vez de dar erro
+                print("⚠️ AVISO: Nenhuma característica de áudio encontrada. Usando valores padrão.")
+                avg_features = np.zeros(8)  # Cria um array de 8 zeros
+            else:
+                # Calculate averages
+                audio_features_array = np.array(audio_features)
+                avg_features = np.mean(audio_features_array, axis=0)
             
             # Get top genres, artists, and tracks
             top_genres = self._get_top_genres(user_id)

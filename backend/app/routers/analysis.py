@@ -21,7 +21,7 @@ async def get_my_analysis(
     
     if not profile:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_F,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Perfil musical não encontrado. Execute a sincronização primeiro."
         )
     

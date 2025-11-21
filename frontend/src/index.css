@@ -10,7 +10,10 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+  
+  /* TEMA ESCURO SPOTIFY */
+  background-color: #121212; /* Fundo principal escuro */
+  color: #FFFFFF;            /* Texto branco */
   min-height: 100vh;
 }
 

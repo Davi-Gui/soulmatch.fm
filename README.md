@@ -92,6 +92,9 @@ soulmatch.fm/
 # Navegar para o diretório backend
 cd backend
 
+#Iniciar containers 
+docker-compose up -d
+
 # Criar ambiente virtual
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
@@ -107,6 +110,9 @@ cp env.example .env
 
 # Executar migrações do banco (quando implementadas)
 # alembic upgrade head
+
+#Inicializar Banco de Dados
+python init_db.py
 
 # Executar o servidor
 python run.py

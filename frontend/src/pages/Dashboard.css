@@ -22,15 +22,11 @@
 }
 
 .welcome-section h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 8px;
+  color: #ffffff;
 }
 
 .welcome-section p {
-  color: #666;
-  font-size: 1.1rem;
+  color: #b3b3b3;
 }
 
 .sync-btn {
@@ -74,43 +70,47 @@
   margin-bottom: 60px;
 }
 
-.stat-card {
-  background: white;
-  border-radius: 16px;
+.stat-card, .action-card {
+  background: #181818; /* Cinza escuro clássico dos cartões */
+  border-radius: 8px;  /* Bordas menos arredondadas, mais parecidas com o app */
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(29, 185, 84, 0.1);
+  box-shadow: 0 4px 60px rgba(0, 0, 0, 0.5);
+  border: none; /* Sem borda */
+  transition: background-color 0.3s ease;
+  
+  /* Mantém o layout flexível que definimos antes */
   display: flex;
   align-items: center;
-  gap: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 24px;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+.stat-card:hover, .action-card:hover {
+  background: #282828;
+  transform: translateY(-5px);
 }
 
-.stat-icon {
+.stat-icon, .action-icon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #1db954, #1ed760);
-  border-radius: 12px;
+  min-width: 60px;
+  background: #1db954; /* Verde Spotify puro */
+  border-radius: 50%;  /* Circular */
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.stat-content h3 {
+.stat-content h3, .action-card h3 {
+  color: #ffffff; /* Título Branco */
   font-size: 2rem;
   font-weight: 700;
-  color: #333;
   margin-bottom: 4px;
 }
 
-.stat-content p {
-  color: #666;
+.stat-content p, .action-card p {
+  color: #b3b3b3; /* Texto secundário cinza */
   font-weight: 500;
 }
 
@@ -122,13 +122,12 @@
 }
 
 .action-card {
-  background: white;
-  border-radius: 20px;
-  padding: 32px;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(29, 185, 84, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  justify-content: space-between;
+  height: 100%;
+  padding: 32px;
 }
 
 .action-card:hover {
@@ -139,26 +138,28 @@
 .action-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #1db954, #1ed760);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  margin: 0 auto 24px;
+  min-width: 80px;
+  min-height: 80px;
+  margin-bottom: 24px;
 }
 
 .action-card h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: #ffffff;
   margin-bottom: 12px;
 }
 
 .action-card p {
-  color: #666;
+  color: #b3b3b3;
   line-height: 1.6;
   margin-bottom: 24px;
+  flex-grow: 1;
+}
+
+.action-card button {
+  width: 100%; /* Botão ocupa a largura toda para ficar bonito */
+  justify-content: center;
 }
 
 .empty-state {

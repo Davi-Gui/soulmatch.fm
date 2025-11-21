@@ -76,8 +76,8 @@ class DataCollectionService:
                         user_id=user_id,
                         track_id=db_track.id,
                         played_at=played_at,
-                        context_type=item.get('context', {}).get('type'),
-                        context_name=item.get('context', {}).get('name')
+                        context_type=(item.get('context') or {}).get('type'),
+                        context_name=(item.get('context') or {}).get('name')
                     )
                     self.db.add(history_entry)
             

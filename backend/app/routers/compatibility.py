@@ -28,7 +28,7 @@ async def calculate_compatibility(
     user2 = db.query(User).filter(User.id == user2_id).first()
     if not user2:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_F,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuário não encontrado"
         )
     
@@ -104,7 +104,7 @@ async def get_compatibility_with_user(
     
     if not score:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_F,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Score de compatibilidade não encontrado"
         )
     
@@ -160,7 +160,7 @@ async def delete_compatibility_score(
     
     if not score:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_F,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Score de compatibilidade não encontrado"
         )
     

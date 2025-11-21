@@ -20,12 +20,12 @@
 .analysis-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #333;
+  color: #ffffff; /* Título Branco */
   margin-bottom: 12px;
 }
 
 .analysis-header p {
-  color: #666;
+  color: #b3b3b3; /* Texto secundário cinza claro */
   font-size: 1.1rem;
 }
 
@@ -35,18 +35,19 @@
   gap: 40px;
 }
 
+/* Container de Features de Áudio */
 .audio-features {
-  background: white;
+  background: #181818; /* Fundo Cinza Escuro */
   border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(29, 185, 84, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: none; /* Remove borda clara */
 }
 
 .audio-features h2 {
   font-size: 1.8rem;
   font-weight: 600;
-  color: #333;
+  color: #ffffff; /* Título Branco */
   margin-bottom: 24px;
 }
 
@@ -64,26 +65,26 @@
 
 .feature-label {
   font-weight: 500;
-  color: #333;
+  color: #b3b3b3; /* Label cinza claro */
   text-transform: capitalize;
 }
 
 .feature-bar {
   height: 8px;
-  background: #f0f0f0;
+  background: #333333; /* Fundo da barra escuro */
   border-radius: 4px;
   overflow: hidden;
 }
 
 .feature-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1db954, #1ed760);
+  background: linear-gradient(90deg, #1db954, #1ed760); /* Mantém o verde vibrante */
   transition: width 0.3s ease;
 }
 
 .feature-value {
   font-weight: 600;
-  color: #1db954;
+  color: #1db954; /* Valor em verde */
   text-align: right;
 }
 
@@ -93,20 +94,21 @@
   gap: 32px;
 }
 
+/* Top Artistas e Faixas */
 .top-artists,
 .top-tracks {
-  background: white;
+  background: #181818; /* Fundo Cinza Escuro */
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(29, 185, 84, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: none;
 }
 
 .top-artists h3,
 .top-tracks h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: #ffffff; /* Título Branco */
   margin-bottom: 20px;
 }
 
@@ -122,7 +124,7 @@
   gap: 12px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #333333; /* Linha divisória escura */
 }
 
 .top-item:last-child {
@@ -131,33 +133,34 @@
 
 .rank {
   font-weight: 600;
-  color: #1db954;
+  color: #1db954; /* Rank verde */
   text-align: center;
 }
 
 .name {
-  color: #333;
+  color: #ffffff; /* Nome Branco */
   font-weight: 500;
 }
 
 .count {
-  color: #666;
+  color: #b3b3b3; /* Contagem cinza claro */
   font-size: 0.9rem;
   text-align: right;
 }
 
+/* Padrões de Escuta */
 .listening-patterns {
-  background: white;
+  background: #181818; /* Fundo Cinza Escuro */
   border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(29, 185, 84, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: none;
 }
 
 .listening-patterns h2 {
   font-size: 1.8rem;
   font-weight: 600;
-  color: #333;
+  color: #ffffff; /* Título Branco */
   margin-bottom: 24px;
 }
 
@@ -172,9 +175,9 @@
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: rgba(29, 185, 84, 0.05);
+  background: #282828; /* Item um pouco mais claro que o fundo */
   border-radius: 12px;
-  border: 1px solid rgba(29, 185, 84, 0.1);
+  border: 1px solid #333333; /* Borda sutil escura */
 }
 
 .pattern-item svg {
@@ -184,12 +187,12 @@
 .pattern-item h4 {
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: #b3b3b3; /* Título do item cinza */
   margin-bottom: 4px;
 }
 
 .pattern-item p {
-  color: #666;
+  color: #ffffff; /* Valor do item branco */
   font-size: 1.2rem;
   font-weight: 600;
 }
@@ -197,7 +200,7 @@
 .empty-analysis {
   text-align: center;
   padding: 80px 20px;
-  color: #666;
+  color: #b3b3b3;
 }
 
 .empty-analysis svg {
@@ -209,7 +212,7 @@
   font-size: 2rem;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #333;
+  color: #ffffff; /* Título vazio branco */
 }
 
 /* Mobile styles */
