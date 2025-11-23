@@ -1,10 +1,13 @@
 .home {
   min-height: 100vh;
+  background-color: #121212;
 }
 
+/* Hero Section (Topo) */
 .hero-section {
   padding: 120px 0 80px;
-  background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+  /* Gradiente escuro sutil em vez do verde total */
+  background: linear-gradient(180deg, #222222 0%, #121212 100%);
   color: white;
   text-align: center;
 }
@@ -19,10 +22,12 @@
   font-weight: 700;
   margin-bottom: 24px;
   line-height: 1.2;
+  color: #ffffff;
 }
 
 .highlight {
-  background: linear-gradient(45deg, #fff, #f0f0f0);
+  /* Texto gradiente verde para destacar */
+  background: linear-gradient(90deg, #1db954, #1ed760);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -31,7 +36,7 @@
 .hero-subtitle {
   font-size: 1.25rem;
   margin-bottom: 40px;
-  opacity: 0.9;
+  color: #b3b3b3; /* Cinza claro */
   line-height: 1.6;
 }
 
@@ -48,9 +53,10 @@
   min-width: 200px;
 }
 
+/* Features Section */
 .features-section {
   padding: 80px 0;
-  background: white;
+  background-color: #121212; /* Fundo Preto */
 }
 
 .section-title {
@@ -58,7 +64,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 60px;
-  color: #333;
+  color: #ffffff;
 }
 
 .features-grid {
@@ -73,14 +79,14 @@
   text-align: center;
   padding: 40px 20px;
   border-radius: 16px;
-  background: rgba(29, 185, 84, 0.05);
-  border: 1px solid rgba(29, 185, 84, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: #181818; /* Cartão Escuro */
+  border: none;
+  transition: transform 0.3s ease, background-color 0.3s ease;
 }
 
 .feature-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(29, 185, 84, 0.15);
+  background: #282828; /* Levemente mais claro no hover */
 }
 
 .feature-icon {
@@ -92,18 +98,21 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #333;
+  color: #ffffff;
 }
 
 .feature-card p {
-  color: #666;
+  color: #b3b3b3;
   line-height: 1.6;
 }
 
+/* Stats Section */
 .stats-section {
   padding: 60px 0;
-  background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+  background: #181818; /* Faixa destaque cinza escura */
   color: white;
+  border-top: 1px solid #282828;
+  border-bottom: 1px solid #282828;
 }
 
 .stats-grid {
@@ -121,16 +130,18 @@
   font-size: 3rem;
   font-weight: 700;
   margin-bottom: 8px;
+  color: #1db954; /* Números em verde */
 }
 
 .stat-label {
   font-size: 1.1rem;
-  opacity: 0.9;
+  color: #b3b3b3;
 }
 
+/* CTA Section (Rodapé da home) */
 .cta-section {
   padding: 80px 0;
-  background: #f8f9fa;
+  background: #121212;
   text-align: center;
 }
 
@@ -143,12 +154,12 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #333;
+  color: #ffffff;
 }
 
 .cta-content p {
   font-size: 1.2rem;
-  color: #666;
+  color: #b3b3b3;
   margin-bottom: 40px;
 }
 

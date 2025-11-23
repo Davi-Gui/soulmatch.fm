@@ -53,8 +53,9 @@ async def sync_user_data(
         await data_service.sync_user_listening_history(current_user.id, sp)
         
         # Generate/update user profile
+        # MUDANÇA AQUI: Passamos o 'sp' para o generate_user_profile
         analysis_service = AnalysisService(db)
-        await analysis_service.generate_user_profile(current_user.id)
+        await analysis_service.generate_user_profile(current_user.id, sp)
         
         return {"message": "Dados sincronizados com sucesso"}
         

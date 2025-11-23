@@ -14,7 +14,8 @@ class AnalysisService:
     def __init__(self, db: Session):
         self.db = db
     
-    async def generate_user_profile(self, user_id: int):
+    # Adicionamos o parametro 'sp' (Spotify Client) opcional
+    async def generate_user_profile(self, user_id: int, sp: Any = None):
         """Gera o perfil musical do usuário"""
         try:
             # Get user's listening history
@@ -23,47 +24,43 @@ class AnalysisService:
             ).all()
             
             if not listening_history:
-                raise ValueError("Nenhum histórico de escuta encontrado")
+                return None
             
             # Get tracks with audio features
             track_ids = [entry.track_id for entry in listening_history]
             tracks = self.db.query(Track).filter(Track.id.in_(track_ids)).all()
             
-            # Calculate audio features averages
+            # CORREÇÃO 1: Coleta flexível de características
+            # Se a música tiver o dado, usa. Se não tiver, usa 0.0 em vez de descartar a música.
             audio_features = []
             for track in tracks:
-                if all([
-                    track.danceability is not None,
-                    track.energy is not None,
-                    track.valence is not None,
-                    track.acousticness is not None,
-                    track.instrumentalness is not None,
-                    track.liveness is not None,
-                    track.speechiness is not None,
-                    track.tempo is not None
-                ]):
+                # Verifica se pelo menos ALGUMA característica existe para não sujar a média com zeros inúteis
+                has_any_feature = any([
+                    track.danceability, track.energy, track.valence, track.tempo
+                ])
+                
+                if has_any_feature:
                     audio_features.append([
-                        track.danceability,
-                        track.energy,
-                        track.valence,
-                        track.acousticness,
-                        track.instrumentalness,
-                        track.liveness,
-                        track.speechiness,
-                        track.tempo
+                        track.danceability or 0.0,
+                        track.energy or 0.0,
+                        track.valence or 0.0,
+                        track.acousticness or 0.0,
+                        track.instrumentalness or 0.0,
+                        track.liveness or 0.0,
+                        track.speechiness or 0.0,
+                        track.tempo or 0.0
                     ])
             
+            # Se mesmo sendo flexível não houver dados, usa array de zeros para não crashar
             if not audio_features:
-                # CORREÇÃO: Se não houver dados, usa zeros em vez de dar erro
-                print("⚠️ AVISO: Nenhuma característica de áudio encontrada. Usando valores padrão.")
-                avg_features = np.zeros(8)  # Cria um array de 8 zeros
+                print("⚠️ AVISO: Nenhuma característica encontrada. Usando perfil neutro.")
+                avg_features = np.zeros(8)
             else:
-                # Calculate averages
                 audio_features_array = np.array(audio_features)
                 avg_features = np.mean(audio_features_array, axis=0)
             
-            # Get top genres, artists, and tracks
-            top_genres = self._get_top_genres(user_id)
+            # CORREÇÃO 2: Passamos o 'sp' para buscar gêneros reais
+            top_genres = self._get_top_genres(user_id, sp)
             top_artists = self._get_top_artists(user_id)
             top_tracks = self._get_top_tracks(user_id)
             
@@ -102,13 +99,32 @@ class AnalysisService:
             
         except Exception as e:
             self.db.rollback()
+            print(f"Erro na análise: {str(e)}")
             raise e
     
-    def _get_top_genres(self, user_id: int, limit: int = 10) -> List[str]:
-        """Obtém os gêneros mais ouvidos pelo usuário"""
-        # This would require genre information from Spotify API
-        # For now, return empty list
-        return []
+    def _get_top_genres(self, user_id: int, sp: Any = None, limit: int = 10) -> List[str]:
+        """Obtém os gêneros mais ouvidos (Agora funciona de verdade!)"""
+        if not sp:
+            return []
+            
+        try:
+            # Busca os top artistas do Spotify, pois só eles têm gêneros (músicas não têm)
+            top_artists_data = sp.current_user_top_artists(limit=50, time_range='medium_term')
+            
+            all_genres = []
+            for artist in top_artists_data['items']:
+                if artist.get('genres'):
+                    all_genres.extend(artist['genres'])
+            
+            # Conta os mais comuns
+            genre_counts = Counter(all_genres)
+            
+            # Retorna apenas os nomes dos top N gêneros
+            return [genre for genre, count in genre_counts.most_common(limit)]
+            
+        except Exception as e:
+            print(f"Erro ao buscar gêneros: {e}")
+            return []
     
     def _get_top_artists(self, user_id: int, limit: int = 20) -> List[Dict[str, Any]]:
         """Obtém os artistas mais ouvidos pelo usuário"""
@@ -166,15 +182,16 @@ class AnalysisService:
                 raise ValueError("Perfis dos usuários não encontrados")
             
             # Calculate audio features similarity
+            # Usa 0.0 se for None para evitar erros
             audio_features1 = [
-                profile1.avg_danceability, profile1.avg_energy, profile1.avg_valence,
-                profile1.avg_acousticness, profile1.avg_instrumentalness, profile1.avg_liveness,
-                profile1.avg_speechiness, profile1.avg_tempo
+                profile1.avg_danceability or 0, profile1.avg_energy or 0, profile1.avg_valence or 0,
+                profile1.avg_acousticness or 0, profile1.avg_instrumentalness or 0, profile1.avg_liveness or 0,
+                profile1.avg_speechiness or 0, profile1.avg_tempo or 0
             ]
             audio_features2 = [
-                profile2.avg_danceability, profile2.avg_energy, profile2.avg_valence,
-                profile2.avg_acousticness, profile2.avg_instrumentalness, profile2.avg_liveness,
-                profile2.avg_speechiness, profile2.avg_tempo
+                profile2.avg_danceability or 0, profile2.avg_energy or 0, profile2.avg_valence or 0,
+                profile2.avg_acousticness or 0, profile2.avg_instrumentalness or 0, profile2.avg_liveness or 0,
+                profile2.avg_speechiness or 0, profile2.avg_tempo or 0
             ]
             
             # Calculate cosine similarity
@@ -264,29 +281,30 @@ class AnalysisService:
         """Realiza clustering de usuários baseado em perfis musicais"""
         try:
             # Get all user profiles with sufficient data
-            profiles = self.db.query(UserProfile).filter(
-                UserProfile.avg_danceability.isnot(None),
-                UserProfile.avg_energy.isnot(None),
-                UserProfile.avg_valence.isnot(None)
-            ).all()
+            # CORREÇÃO: Não exigimos que TODOS os campos sejam não-nulos, apenas os principais
+            # e lidamos com nulos no código abaixo
+            profiles = self.db.query(UserProfile).all()
             
-            if len(profiles) < min_users:
+            # Filtra perfis que tenham pelo menos alguma info
+            valid_profiles = [p for p in profiles if p.avg_energy is not None or p.avg_danceability is not None]
+            
+            if len(valid_profiles) < min_users:
                 return {"message": f"Usuários insuficientes para clustering (mínimo: {min_users})"}
             
             # Prepare data for clustering
             features = []
             profile_ids = []
             
-            for profile in profiles:
+            for profile in valid_profiles:
                 features.append([
-                    profile.avg_danceability,
-                    profile.avg_energy,
-                    profile.avg_valence,
-                    profile.avg_acousticness,
-                    profile.avg_instrumentalness,
-                    profile.avg_liveness,
-                    profile.avg_speechiness,
-                    profile.avg_tempo
+                    profile.avg_danceability or 0,
+                    profile.avg_energy or 0,
+                    profile.avg_valence or 0,
+                    profile.avg_acousticness or 0,
+                    profile.avg_instrumentalness or 0,
+                    profile.avg_liveness or 0,
+                    profile.avg_speechiness or 0,
+                    profile.avg_tempo or 0
                 ])
                 profile_ids.append(profile.id)
             
@@ -295,7 +313,7 @@ class AnalysisService:
             features_scaled = scaler.fit_transform(features)
             
             # Perform K-means clustering
-            n_clusters = min(5, len(profiles) // 3)  # Adaptive number of clusters
+            n_clusters = min(5, max(2, len(valid_profiles) // 3))  # Garante min 2 clusters se possível
             kmeans = KMeans(n_clusters=n_clusters, random_state=42)
             cluster_labels = kmeans.fit_predict(features_scaled)
             
@@ -310,10 +328,9 @@ class AnalysisService:
             return {
                 "message": f"Clustering realizado com sucesso",
                 "n_clusters": n_clusters,
-                "n_users": len(profiles)
+                "n_users": len(valid_profiles)
             }
             
         except Exception as e:
             self.db.rollback()
             raise e
-
