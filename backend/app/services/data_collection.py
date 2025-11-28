@@ -1,39 +1,117 @@
 import spotipy
+import pandas as pd
+import os
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from datetime import datetime
 import json
 
-from app.models import User, Track, ListeningHistory
-from app.schemas import TrackCreate
+from app.models import Track, ListeningHistory
+
+# --- CACHE GLOBAL DO DATASET ---
+_tracks_df = None
+
+def get_tracks_dataset():
+    global _tracks_df
+    if _tracks_df is None:
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            csv_path = os.path.join(base_dir, 'data', 'spotify_features.csv')
+            
+            print(f"📂 Tentando carregar dataset de: {csv_path}")
+            
+            if not os.path.exists(csv_path):
+                print(f"❌ ARQUIVO NÃO ENCONTRADO: {csv_path}")
+                return pd.DataFrame()
+
+            # --- CORREÇÃO AQUI ---
+            # 1. Definimos os nomes esperados (pode ser 'track_id' no CSV)
+            # Ajuste 'track_id' abaixo se o seu script do Passo 1 mostrou outro nome!
+            col_mapping = {'track_id': 'id'} 
+            
+            # 2. Carregamos as colunas originais do CSV
+            # Nota: removemos 'id' da lista de usecols e colocamos 'track_id'
+            cols_to_load = [
+                'track_id', 'danceability', 'energy', 'key', 'loudness', 'mode', 
+                'speechiness', 'acousticness', 'instrumentalness', 'liveness', 
+                'valence', 'tempo', 'time_signature'
+            ]
+            
+            # 3. Carregamos e renomeamos imediatamente
+            _tracks_df = pd.read_csv(csv_path, usecols=cols_to_load)
+            _tracks_df.rename(columns=col_mapping, inplace=True)
+            
+            # 4. Definimos o ID como índice DEPOIS de carregar e renomear
+            _tracks_df.set_index('id', inplace=True)
+            
+            print(f"✅ Dataset carregado com sucesso! ({len(_tracks_df)} músicas)")
+            
+        except ValueError as ve:
+            # Este erro captura especificamente o problema das colunas
+            print(f"⚠️ Erro de Colunas: {ve}")
+            print("   DICA: Verifique se o nome 'track_id' existe no seu CSV usando o script check_columns.py")
+            _tracks_df = pd.DataFrame()
+        except Exception as e:
+            print(f"⚠️ Erro crítico ao carregar CSV: {e}")
+            _tracks_df = pd.DataFrame()
+            
+    return _tracks_df
 
 class DataCollectionService:
     def __init__(self, db: Session):
         self.db = db
+        self.dataset = get_tracks_dataset()
     
+    def _enrich_track_from_csv(self, db_track):
+        """Função auxiliar para preencher dados do CSV numa faixa existente"""
+        if self.dataset.empty:
+            return False
+
+        spotify_id = db_track.spotify_id
+        
+        if spotify_id in self.dataset.index:
+            try:
+                features = self.dataset.loc[spotify_id]
+                
+                # Atualiza os campos
+                db_track.danceability = float(features['danceability'])
+                db_track.energy = float(features['energy'])
+                db_track.key = int(features['key'])
+                db_track.loudness = float(features['loudness'])
+                db_track.mode = int(features['mode'])
+                db_track.speechiness = float(features['speechiness'])
+                db_track.acousticness = float(features['acousticness'])
+                db_track.instrumentalness = float(features['instrumentalness'])
+                db_track.liveness = float(features['liveness'])
+                db_track.valence = float(features['valence'])
+                db_track.tempo = float(features['tempo'])
+                db_track.time_signature = int(features['time_signature'])
+                
+                return True
+            except Exception as e:
+                print(f"⚠️ Erro ao ler dados do CSV para {spotify_id}: {e}")
+        return False
+
     async def sync_user_listening_history(self, user_id: int, sp: spotipy.Spotify):
         """Sincroniza o histórico de escuta do usuário"""
         try:
-            # Get recently played tracks
             recent_tracks = sp.current_user_recently_played(limit=50)
+            print(f"🔄 Processando {len(recent_tracks['items'])} músicas do histórico...")
             
             for item in recent_tracks['items']:
                 track_data = item['track']
                 played_at = datetime.fromisoformat(item['played_at'].replace('Z', '+00:00'))
+                spotify_id = track_data['id']
                 
-                # Check if track exists
-                db_track = self.db.query(Track).filter(Track.spotify_id == track_data['id']).first()
+                # 1. Verifica se a música existe
+                db_track = self.db.query(Track).filter(Track.spotify_id == spotify_id).first()
                 
+                # Flag para saber se precisamos salvar mudanças na música
+                track_modified = False
+
                 if not db_track:
-                    # Get audio features
-                    try:
-                        audio_features = sp.audio_features(track_data['id'])[0]
-                    except:
-                        audio_features = None
-                    
-                    # Create track
+                    # Se não existe, CRIA a música básica
                     db_track = Track(
-                        spotify_id=track_data['id'],
+                        spotify_id=spotify_id,
                         name=track_data['name'],
                         artists=','.join([artist['name'] for artist in track_data['artists']]),
                         album=track_data['album']['name'],
@@ -43,27 +121,27 @@ class DataCollectionService:
                         preview_url=track_data.get('preview_url'),
                         external_urls=json.dumps(track_data['external_urls'])
                     )
-                    
-                    # Add audio features if available
-                    if audio_features:
-                        db_track.danceability = audio_features.get('danceability')
-                        db_track.energy = audio_features.get('energy')
-                        db_track.key = audio_features.get('key')
-                        db_track.loudness = audio_features.get('loudness')
-                        db_track.mode = audio_features.get('mode')
-                        db_track.speechiness = audio_features.get('speechiness')
-                        db_track.acousticness = audio_features.get('acousticness')
-                        db_track.instrumentalness = audio_features.get('instrumentalness')
-                        db_track.liveness = audio_features.get('liveness')
-                        db_track.valence = audio_features.get('valence')
-                        db_track.tempo = audio_features.get('tempo')
-                        db_track.time_signature = audio_features.get('time_signature')
-                    
                     self.db.add(db_track)
+                    track_modified = True
+                
+                # 2. VERIFICAÇÃO DE DADOS (A CORREÇÃO ESTÁ AQUI)
+                # Se a música existe mas não tem dados (danceability é None), tenta buscar no CSV
+                if db_track.danceability is None:
+                    found = self._enrich_track_from_csv(db_track)
+                    if found:
+                        print(f"✨ Dados recuperados do CSV para: {db_track.name}")
+                        track_modified = True
+                    else:
+                        # Se não achou no CSV, imprime aviso (provavelmente música nova pós-2021)
+                        # print(f"💨 Música não está no Dataset: {db_track.name}")
+                        pass
+
+                # Commit apenas se houve mudança na tabela de músicas
+                if track_modified:
                     self.db.commit()
                     self.db.refresh(db_track)
                 
-                # Check if listening history entry exists
+                # 3. Salva o Histórico (Quem ouviu e quando)
                 existing_entry = self.db.query(ListeningHistory).filter(
                     ListeningHistory.user_id == user_id,
                     ListeningHistory.track_id == db_track.id,
@@ -71,100 +149,23 @@ class DataCollectionService:
                 ).first()
                 
                 if not existing_entry:
-                    # Create listening history entry
+                    context = item.get('context') or {}
                     history_entry = ListeningHistory(
                         user_id=user_id,
                         track_id=db_track.id,
                         played_at=played_at,
-                        context_type=(item.get('context') or {}).get('type'),
-                        context_name=(item.get('context') or {}).get('name')
+                        context_type=context.get('type'),
+                        context_name=context.get('name') # Simplificado pois name pode não vir
                     )
                     self.db.add(history_entry)
             
             self.db.commit()
+            print("✅ Sincronização concluída!")
             
         except Exception as e:
             self.db.rollback()
+            print(f"❌ Erro fatal na sincronização: {e}")
             raise e
-    
+            
     async def get_user_top_tracks(self, user_id: int, sp: spotipy.Spotify, time_range: str = 'medium_term', limit: int = 50):
-        """Obtém as músicas mais tocadas do usuário"""
-        try:
-            top_tracks = sp.current_user_top_tracks(limit=limit, time_range=time_range)
-            
-            tracks_data = []
-            for track_data in top_tracks['items']:
-                # Get or create track in database
-                db_track = self.db.query(Track).filter(Track.spotify_id == track_data['id']).first()
-                
-                if not db_track:
-                    # Get audio features
-                    try:
-                        audio_features = sp.audio_features(track_data['id'])[0]
-                    except:
-                        audio_features = None
-                    
-                    # Create track
-                    db_track = Track(
-                        spotify_id=track_data['id'],
-                        name=track_data['name'],
-                        artists=','.join([artist['name'] for artist in track_data['artists']]),
-                        album=track_data['album']['name'],
-                        duration_ms=track_data['duration_ms'],
-                        popularity=track_data['popularity'],
-                        explicit=track_data['explicit'],
-                        preview_url=track_data.get('preview_url'),
-                        external_urls=json.dumps(track_data['external_urls'])
-                    )
-                    
-                    # Add audio features if available
-                    if audio_features:
-                        db_track.danceability = audio_features.get('danceability')
-                        db_track.energy = audio_features.get('energy')
-                        db_track.key = audio_features.get('key')
-                        db_track.loudness = audio_features.get('loudness')
-                        db_track.mode = audio_features.get('mode')
-                        db_track.speechiness = audio_features.get('speechiness')
-                        db_track.acousticness = audio_features.get('acousticness')
-                        db_track.instrumentalness = audio_features.get('instrumentalness')
-                        db_track.liveness = audio_features.get('liveness')
-                        db_track.valence = audio_features.get('valence')
-                        db_track.tempo = audio_features.get('tempo')
-                        db_track.time_signature = audio_features.get('time_signature')
-                    
-                    self.db.add(db_track)
-                    self.db.commit()
-                    self.db.refresh(db_track)
-                
-                tracks_data.append({
-                    'track': db_track,
-                    'spotify_data': track_data
-                })
-            
-            return tracks_data
-            
-        except Exception as e:
-            raise e
-    
-    async def get_user_top_artists(self, user_id: int, sp: spotipy.Spotify, time_range: str = 'medium_term', limit: int = 50):
-        """Obtém os artistas mais ouvidos do usuário"""
-        try:
-            top_artists = sp.current_user_top_artists(limit=limit, time_range=time_range)
-            
-            artists_data = []
-            for artist_data in top_artists['items']:
-                artists_data.append({
-                    'id': artist_data['id'],
-                    'name': artist_data['name'],
-                    'genres': artist_data['genres'],
-                    'popularity': artist_data['popularity'],
-                    'followers': artist_data['followers']['total'],
-                    'image_url': artist_data['images'][0]['url'] if artist_data['images'] else None,
-                    'external_urls': artist_data['external_urls']
-                })
-            
-            return artists_data
-            
-        except Exception as e:
-            raise e
-
+        pass
