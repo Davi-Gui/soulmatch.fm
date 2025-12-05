@@ -58,14 +58,20 @@ const Login: React.FC = () => {
   const handleSpotifyLogin = async () => {
     setIsLoading(true);
     try {
+      console.log("Tentando conectar ao backend...");
       const response = await authAPI.getLoginUrl();
+      console.log("Resposta do backend:", response.data);
+
       const { auth_url } = response.data;
       
-      // Redirect to Spotify OAuth
-      window.location.href = auth_url;
+      if (auth_url) {
+        window.location.href = auth_url;
+      } else {
+        throw new Error("URL de login não recebida");
+      }
     } catch (error) {
       console.error('Erro ao obter URL de login:', error);
-      toast.error('Erro ao conectar com Spotify');
+      toast.error('Erro de conexão: Verifique se o Backend (Python) está rodando!');
       setIsLoading(false);
     }
   };
