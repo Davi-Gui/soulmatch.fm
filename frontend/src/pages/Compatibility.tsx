@@ -4,6 +4,8 @@ import { compatibilityAPI, userAPI } from '../services/api';
 import { Heart, Users, Search, Trash2, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './Compatibility.css';
+import ComparisonChart from '../components/ComparisonChart';
+import { X } from 'lucide-react';
 
 const Compatibility: React.FC = () => {
   const { user } = useAuth();
@@ -53,18 +55,29 @@ const Compatibility: React.FC = () => {
     }
   };
 
+  const [chartData, setChartData] = useState<any>(null);
+
   // 2. Função que calcula usando o ID do usuário encontrado
   const handleCalculate = async (targetUserId: number, targetUserName: string) => {
     try {
       toast.loading(`Calculando com ${targetUserName}...`, { id: 'calc' });
       const response = await compatibilityAPI.calculateCompatibility(targetUserId);
+      
+      // SALVA OS DADOS PARA O GRÁFICO
+      setChartData({
+        user1Name: user?.display_name || 'Você',
+        user2Name: targetUserName,
+        features1: response.data.user1_features,
+        features2: response.data.user2_features
+      });
+
       toast.success(`Compatibilidade: ${(response.data.overall_score * 100).toFixed(1)}%`, { id: 'calc' });
       
-      setSearchResults([]); // Limpa a busca
-      setSearchTerm('');    // Limpa o campo
-      loadTopMatches();     // Atualiza a lista de baixo
+      setSearchResults([]);
+      setSearchTerm('');
+      loadTopMatches();
     } catch (error) {
-      toast.error('Erro ao calcular compatibilidade', { id: 'calc' });
+      toast.error('Erro ao calcular', { id: 'calc' });
     }
   };
 
@@ -200,6 +213,39 @@ const Compatibility: React.FC = () => {
           )}
         </div>
       </div>
+    {/* --- MODAL DO GRÁFICO --- */}
+      {chartData && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: '#121212', padding: '30px', borderRadius: '20px',
+            width: '90%', maxWidth: '600px', position: 'relative',
+            border: '1px solid #333'
+          }}>
+            <button 
+              onClick={() => setChartData(null)}
+              style={{
+                position: 'absolute', top: '15px', right: '15px',
+                background: 'none', border: 'none', color: 'white', cursor: 'pointer'
+              }}
+            >
+              <X size={24} />
+            </button>
+            
+            <h2 style={{color: 'white', textAlign: 'center', marginBottom: '20px'}}>Comparação Visual</h2>
+            
+            <ComparisonChart 
+              user1Name={chartData.user1Name}
+              user2Name={chartData.user2Name}
+              features1={chartData.features1}
+              features2={chartData.features2}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

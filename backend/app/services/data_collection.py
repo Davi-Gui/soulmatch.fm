@@ -17,13 +17,13 @@ def get_tracks_dataset():
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             csv_path = os.path.join(base_dir, 'data', 'spotify_features.csv')
             
-            print(f"📂 Tentando carregar dataset de: {csv_path}")
+            print(f"Tentando carregar dataset de: {csv_path}")
             
             if not os.path.exists(csv_path):
-                print(f"❌ ARQUIVO NÃO ENCONTRADO: {csv_path}")
+                print(f"ARQUIVO NÃO ENCONTRADO: {csv_path}")
                 return pd.DataFrame()
 
-            # --- CORREÇÃO AQUI ---
+            # correções locais para leitura do CSV
             # 1. Definimos os nomes esperados (pode ser 'track_id' no CSV)
             # Ajuste 'track_id' abaixo se o seu script do Passo 1 mostrou outro nome!
             col_mapping = {'track_id': 'id'} 
@@ -43,15 +43,15 @@ def get_tracks_dataset():
             # 4. Definimos o ID como índice DEPOIS de carregar e renomear
             _tracks_df.set_index('id', inplace=True)
             
-            print(f"✅ Dataset carregado com sucesso! ({len(_tracks_df)} músicas)")
+            print(f"Dataset carregado com sucesso ({len(_tracks_df)} músicas)")
             
         except ValueError as ve:
             # Este erro captura especificamente o problema das colunas
-            print(f"⚠️ Erro de Colunas: {ve}")
-            print("   DICA: Verifique se o nome 'track_id' existe no seu CSV usando o script check_columns.py")
+            print(f"Erro de colunas: {ve}")
+            print("   Dica: verifique se o nome 'track_id' existe no seu CSV usando o script check_columns.py")
             _tracks_df = pd.DataFrame()
         except Exception as e:
-            print(f"⚠️ Erro crítico ao carregar CSV: {e}")
+            print(f"Erro ao carregar CSV: {e}")
             _tracks_df = pd.DataFrame()
             
     return _tracks_df
@@ -72,7 +72,7 @@ class DataCollectionService:
             try:
                 features = self.dataset.loc[spotify_id]
                 
-                # Atualiza os campos
+                # atualiza os campos
                 db_track.danceability = float(features['danceability'])
                 db_track.energy = float(features['energy'])
                 db_track.key = int(features['key'])
@@ -129,11 +129,11 @@ class DataCollectionService:
                 if db_track.danceability is None:
                     found = self._enrich_track_from_csv(db_track)
                     if found:
-                        print(f"✨ Dados recuperados do CSV para: {db_track.name}")
+                        print(f"Dados recuperados do CSV para: {db_track.name}")
                         track_modified = True
                     else:
                         # Se não achou no CSV, imprime aviso (provavelmente música nova pós-2021)
-                        # print(f"💨 Música não está no Dataset: {db_track.name}")
+                        # aqui não achamos dados no CSV para essa faixa
                         pass
 
                 # Commit apenas se houve mudança na tabela de músicas
@@ -160,11 +160,11 @@ class DataCollectionService:
                     self.db.add(history_entry)
             
             self.db.commit()
-            print("✅ Sincronização concluída!")
+            print("Sincronização concluída")
             
         except Exception as e:
             self.db.rollback()
-            print(f"❌ Erro fatal na sincronização: {e}")
+            print(f"Erro na sincronização: {e}")
             raise e
             
     async def get_user_top_tracks(self, user_id: int, sp: spotipy.Spotify, time_range: str = 'medium_term', limit: int = 50):

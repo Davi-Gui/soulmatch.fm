@@ -52,7 +52,9 @@ async def calculate_compatibility(
             overall_score=compatibility_data['overall_score'],
             breakdown=compatibility_data['breakdown'],
             common_tracks=compatibility_data['common_tracks'],
-            recommendations=[]
+            recommendations=[],
+            user1_features=compatibility_data.get('user1_features'),
+            user2_features=compatibility_data.get('user2_features')
         )
         
     except Exception as e:

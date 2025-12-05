@@ -1,10 +1,10 @@
-# 🚀 Guia de Início Rápido - SoulMatch.fm
+# Guia de Início Rápido - SoulMatch.fm
 
 Este guia te ajudará a configurar e executar o projeto SoulMatch.fm em poucos minutos.
 
-## ⚡ Início Rápido
+## Início Rápido
 
-> **⚠️ IMPORTANTE**: Se você está em um sistema Linux, leia primeiro o [Guia de Segurança](docs/SEGURANCA_LINUX.md) para evitar problemas que podem afetar seu sistema.
+> **IMPORTANTE**: Se você está em um sistema Linux, leia primeiro o [Guia de Segurança](docs/SEGURANCA_LINUX.md) para evitar problemas que podem afetar seu sistema.
 
 ### 1. Pré-requisitos
 
@@ -56,14 +56,14 @@ cd soulmatch.fm
 ./dev.sh run
 ```
 
-**⚠️ Importante**: O script `./dev.sh setup` criará automaticamente um ambiente virtual Python na pasta `backend/venv` e instalará todas as dependências necessárias.
+**Importante**: O script `./dev.sh setup` criará automaticamente um ambiente virtual Python na pasta `backend/venv` e instalará todas as dependências necessárias.
 
 ### 4. Acessar a Aplicação
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
 - **Documentação da API**: http://localhost:8000/docs
 
-## 🔧 Configuração Manual
+## Configuração Manual
 
 Se preferir configurar manualmente:
 
@@ -102,7 +102,7 @@ python init_db.py
 python run.py
 ```
 
-**💡 Dica**: Sempre ative o ambiente virtual antes de trabalhar no backend:
+**Dica**: Sempre ative o ambiente virtual antes de trabalhar no backend:
 ```bash
 cd backend
 source venv/bin/activate
@@ -119,7 +119,7 @@ npm install
 npm start
 ```
 
-## 📝 Configuração do .env
+## Configuração do .env
 
 Edite o arquivo `backend/.env` com suas credenciais:
 
@@ -142,14 +142,14 @@ DEBUG=True
 CORS_ORIGINS=["http://localhost:3000", "http://localhost:5173"]
 ```
 
-## 🎯 Como Usar
+## Como Usar
 
 1. **Acesse** http://localhost:3000
 2. **Clique** em "Conectar com Spotify"
 3. **Autorize** o acesso aos seus dados do Spotify
 4. **Explore** seu perfil musical e compatibilidades
 
-## 🐛 Solução de Problemas
+## Solução de Problemas
 
 ### Erro de Conexão com Banco
 ```bash
@@ -190,21 +190,21 @@ pip list      # Deve mostrar as dependências instaladas
 - Verifique se as credenciais no `.env` estão corretas
 - Confirme se a URL de redirecionamento está configurada no Spotify Dashboard
 
-## 📊 Funcionalidades
+## Funcionalidades
 
-### ✅ Implementadas
+### Implementadas
 - Autenticação com Spotify
 - Análise de perfil musical
 - Cálculo de compatibilidade
 - Interface web responsiva
 - Clustering de usuários
 
-### 🔄 Em Desenvolvimento
+### Em Desenvolvimento
 - Visualizações avançadas
 - Recomendações de música
 - Chat entre usuários compatíveis
 
-## 🔬 Como Funciona
+## Como Funciona
 
 ### 1. **Autenticação e Coleta de Dados**
 - Usuário conecta com Spotify via OAuth2

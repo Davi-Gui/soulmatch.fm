@@ -1,16 +1,16 @@
-# 🛡️ Guia de Segurança para Linux - SoulMatch.fm
+# Guia de Segurança para Linux - SoulMatch.fm
 
-Este guia identifica possíveis problemas que podem afetar seu sistema Linux durante a instalação e como evitá-los.
+Este guia identifica possíveis problemas que podem afetar seu sistema Linux durante a instalação e como evitá-los. (Nota: documento elaborado pelos alunos do projeto.)
 
-## ⚠️ **RISCOS IDENTIFICADOS**
+## Riscos Identificados
 
 ### 1. **Bibliotecas Python com Dependências do Sistema**
 
-#### 🔴 **psycopg2-binary** (Driver PostgreSQL)
+#### psycopg2-binary (Driver PostgreSQL)
 ```bash
 # PROBLEMA: Pode tentar compilar código C
 # SOLUÇÃO: Usar versão binary (já está no requirements.txt)
-psycopg2-binary==2.9.9  # ✅ Seguro
+psycopg2-binary==2.9.9  # Seguro (usado para evitar compilação local)
 # psycopg2==2.9.9       # ❌ Pode quebrar (requer libpq-dev)
 ```
 
@@ -31,7 +31,7 @@ sudo apt-get install -y build-essential python3-dev
 
 ### 2. **Bibliotecas de Machine Learning**
 
-#### 🟡 **scikit-learn, pandas, numpy**
+#### scikit-learn, pandas, numpy
 ```bash
 # PROBLEMA: Podem precisar de BLAS/LAPACK
 # SOLUÇÃO: Instalar bibliotecas matemáticas
@@ -52,7 +52,7 @@ sudo netstat -tulpn | grep :8000  # Backend
 sudo systemctl stop postgresql  # Se PostgreSQL estiver rodando
 ```
 
-## 🛡️ **INSTALAÇÃO SEGURA**
+## Instalação segura
 
 ### 1. **Preparar Sistema (Ubuntu/Debian)**
 ```bash
@@ -116,7 +116,7 @@ pip3 --version
 sudo ss -tulpn | grep -E ':(3000|8000|5432)'
 ```
 
-## 🔧 **INSTALAÇÃO COM AMBIENTE VIRTUAL (RECOMENDADO)**
+## Instalação com ambiente virtual (recomendado)
 
 ### 1. **Criar Ambiente Virtual Isolado**
 ```bash
@@ -165,7 +165,7 @@ python -c "import sklearn; print('Scikit-learn OK')"
 python -c "import pandas; print('Pandas OK')"
 ```
 
-## 🚨 **PROBLEMAS COMUNS E SOLUÇÕES**
+## Problemas comuns e soluções
 
 ### 1. **Erro de Compilação**
 ```bash
@@ -208,7 +208,7 @@ export MAKEFLAGS="-j1"  # Usar apenas 1 processo
 pip install --no-cache-dir package_name
 ```
 
-## 🔒 **CONFIGURAÇÕES DE SEGURANÇA**
+## Configurações de segurança
 
 ### 1. **Firewall (Opcional)**
 ```bash
@@ -231,7 +231,7 @@ whoami  # Deve mostrar seu usuário, não 'root'
 sudo tar -czf backup_before_soulmatch.tar.gz /home/$USER
 ```
 
-## 📋 **CHECKLIST DE SEGURANÇA**
+## Checklist de segurança
 
 Antes de instalar, verifique:
 

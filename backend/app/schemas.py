@@ -156,6 +156,8 @@ class CompatibilityAnalysis(BaseModel):
     breakdown: Dict[str, float]
     common_tracks: List[Dict[str, Any]]
     recommendations: List[Dict[str, Any]]
+    user1_features: Optional[Dict[str, float]] = None
+    user2_features: Optional[Dict[str, float]] = None
 
 class UserAnalysis(BaseModel):
     user_id: int
@@ -165,6 +167,7 @@ class UserAnalysis(BaseModel):
     audio_features_profile: Dict[str, float]
     listening_patterns: Dict[str, Any]
     cluster_assignment: Optional[int] = None
+    music_persona: Optional[str] = "Analisando..."
 
 # Spotify API Schemas
 class SpotifyTrack(BaseModel):

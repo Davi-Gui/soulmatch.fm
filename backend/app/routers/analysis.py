@@ -11,6 +11,38 @@ from app.services.analysis import AnalysisService
 
 router = APIRouter()
 
+def determine_music_persona(features: dict) -> str:
+    """Traduz números em nomes de 'Vibe'"""
+    energy = features.get("energy", 0)
+    dance = features.get("danceability", 0)
+    acoustic = features.get("acousticness", 0)
+    valence = features.get("valence", 0)
+    instrumental = features.get("instrumentalness", 0)
+    
+    # Lógica de decisão (Regras)
+    if instrumental > 0.5:
+        return "Foco & Instrumental"
+    
+    if energy > 0.75 and dance > 0.6:
+        return "Rei da Pista"
+    
+    if energy > 0.8 and valence < 0.4:
+        return "Metal & Intenso"
+        
+    if acoustic > 0.7:
+        return "Acústico & Café"
+        
+    if valence > 0.75 and dance > 0.6:
+        return "Good Vibes"
+        
+    if valence < 0.3 and energy < 0.4:
+        return "Melancólico & Profundo"
+        
+    if dance > 0.8:
+        return "Não Para de Dançar"
+        
+    return "Eclético / Explorador"
+
 @router.get("/my-profile", response_model=UserAnalysis)
 async def get_my_analysis(
     current_user: User = Depends(get_current_user),
@@ -50,6 +82,8 @@ async def get_my_analysis(
         "avg_session_duration": profile.avg_session_duration
     }
     
+    persona = determine_music_persona(audio_features_profile)
+
     return UserAnalysis(
         user_id=current_user.id,
         top_genres=top_genres,
@@ -57,7 +91,8 @@ async def get_my_analysis(
         top_tracks=top_tracks,
         audio_features_profile=audio_features_profile,
         listening_patterns=listening_patterns,
-        cluster_assignment=profile.cluster_id
+        cluster_assignment=profile.cluster_id,
+        music_persona=persona
     )
 
 @router.get("/clusters")
@@ -102,7 +137,7 @@ async def get_cluster_analysis(
 
 @router.post("/clustering")
 async def perform_clustering(
-    min_users: int = 10,
+    min_users: int = 2,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

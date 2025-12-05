@@ -1,4 +1,4 @@
-# 🎧 SoulMatch.fm - Compatibilidade Musical
+# SoulMatch.fm - Compatibilidade Musical
 
 **Projeto Interdisciplinar (PID) – CEFET-MG**  
 Equipe: Davi Gumarães, João Paulo Lacerda e João Victor de Carvalho / Ano: 2025
@@ -11,7 +11,7 @@ SoulMatch.fm é uma aplicação web que analisa a **compatibilidade musical entr
 
 ---
 
-## 🎯 Objetivo
+## Objetivo
 
 Responder à seguinte pergunta de pesquisa:
 
@@ -19,7 +19,7 @@ Responder à seguinte pergunta de pesquisa:
 
 ---
 
-## 🧪 Tecnologias
+## Tecnologias
 
 ### Backend
 - **Python 3.9+**
@@ -48,7 +48,7 @@ Responder à seguinte pergunta de pesquisa:
 
 ---
 
-## 🧭 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 soulmatch.fm/
@@ -141,9 +141,9 @@ npm start
 
 ---
 
-## 🔧 Funcionalidades Implementadas
+## Funcionalidades Implementadas
 
-### ✅ Backend
+### Backend
 - [x] Estrutura base do FastAPI
 - [x] Modelos de banco de dados
 - [x] Autenticação OAuth2 com Spotify
@@ -153,7 +153,7 @@ npm start
 - [x] Serviços de coleta de dados
 - [x] Serviços de análise e clustering
 
-### ✅ Frontend
+### Frontend
 - [x] Estrutura base do React
 - [x] Sistema de autenticação
 - [x] Páginas principais (Home, Login, Dashboard, Profile, Compatibility, Analysis)
@@ -161,7 +161,7 @@ npm start
 - [x] Integração com API
 - [x] Interface responsiva
 
-### 🔄 Em Desenvolvimento
+### Em Desenvolvimento
 - [ ] Configuração do banco de dados PostgreSQL
 - [ ] Testes automatizados
 - [ ] Deploy em produção
@@ -170,7 +170,7 @@ npm start
 
 ---
 
-## 📊 Algoritmo de Compatibilidade
+## Algoritmo de Compatibilidade
 
 O algoritmo de compatibilidade considera:
 
@@ -192,7 +192,7 @@ O algoritmo de compatibilidade considera:
 
 ---
 
-## 🔒 Privacidade e Segurança
+## Privacidade e Segurança
 
 - **Dados Acessados**: Apenas dados públicos e histórico de escuta do Spotify
 - **Armazenamento**: Dados agregados e anonimizados
@@ -201,7 +201,7 @@ O algoritmo de compatibilidade considera:
 
 ---
 
-## 📚 Documentação
+## Documentação
 
 A documentação técnica detalhada está sendo desenvolvida na pasta `/docs` e incluirá:
 
@@ -212,7 +212,7 @@ A documentação técnica detalhada está sendo desenvolvida na pasta `/docs` e 
 
 ---
 
-## 🚀 Deploy
+## Deploy
 
 ### Opções de Hospedagem
 - **Backend**: Railway, Render, Heroku
@@ -235,7 +235,7 @@ SECRET_KEY=your_production_secret_key
 
 ---
 
-## 🤝 Contribuição
+## Contribuição
 
 Este é um projeto acadêmico, mas contribuições são bem-vindas:
 
@@ -247,19 +247,19 @@ Este é um projeto acadêmico, mas contribuições são bem-vindas:
 
 ---
 
-## 📄 Licença
+## Licença
 
 Este projeto é de uso acadêmico e todos os direitos são reservados à equipe responsável.
 
 ---
 
-## ✨ Futuro
+## Futuro
 
 Este projeto foi pensado com potencial de uso prático fora do ambiente acadêmico e poderá ser explorado comercialmente no futuro, dependendo da viabilidade técnica e do interesse da equipe.
 
 ---
 
-## 📞 Contato
+## Contato
 
 **Equipe SoulMatch.fm**
 - Davi Gumarães

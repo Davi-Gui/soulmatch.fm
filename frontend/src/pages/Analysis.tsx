@@ -22,6 +22,14 @@ const Analysis: React.FC = () => {
     }
   };
 
+  // --- NOVA FUNÇÃO DE FORMATAÇÃO ---
+  const formatDuration = (ms: number) => {
+    if (!ms) return '0 min';
+    const minutes = Math.floor(ms / 60000);
+    const seconds = ((ms % 60000) / 1000).toFixed(0);
+    return `${minutes}:${Number(seconds) < 10 ? '0' : ''}${seconds} min`;
+  };
+
   if (isLoading) {
     return (
       <div className="analysis-loading">
@@ -44,18 +52,37 @@ const Analysis: React.FC = () => {
             <div className="audio-features">
               <h2>Características de Áudio</h2>
               <div className="features-grid">
-                {Object.entries(analysis.audio_features_profile).map(([key, value]) => (
-                  <div key={key} className="feature-item">
-                    <div className="feature-label">{key}</div>
-                    <div className="feature-bar">
-                      <div 
-                        className="feature-fill" 
-                        style={{ width: `${(value as number) * 100}%` }}
-                      ></div>
+                {/* Mapeamento de nomes para Português */}
+                {Object.entries(analysis.audio_features_profile).map(([key, value]) => {
+                  const labels: {[key: string]: string} = {
+                    danceability: 'Dançabilidade',
+                    energy: 'Energia',
+                    valence: 'Positividade',
+                    acousticness: 'Acústico',
+                    instrumentalness: 'Instrumental',
+                    liveness: 'Ao Vivo',
+                    speechiness: 'Fala',
+                    tempo: 'Tempo (BPM)'
+                  };
+                  
+                  // Tratamento especial para o Tempo (que não é porcentagem)
+                  const isTempo = key === 'tempo';
+                  const displayValue = isTempo ? Math.round(value as number) : (value as number).toFixed(2);
+                  const barWidth = isTempo ? Math.min((value as number) / 200 * 100, 100) : (value as number) * 100;
+
+                  return (
+                    <div key={key} className="feature-item">
+                      <div className="feature-label">{labels[key] || key}</div>
+                      <div className="feature-bar">
+                        <div 
+                          className="feature-fill" 
+                          style={{ width: `${barWidth}%` }}
+                        ></div>
+                      </div>
+                      <div className="feature-value">{displayValue}</div>
                     </div>
-                    <div className="feature-value">{(value as number).toFixed(2)}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -67,7 +94,7 @@ const Analysis: React.FC = () => {
                     <div key={index} className="top-item">
                       <span className="rank">{index + 1}</span>
                       <span className="name">{artist.name}</span>
-                      <span className="count">{artist.play_count}</span>
+                      <span className="count">{artist.play_count} plays</span>
                     </div>
                   ))}
                 </div>
@@ -80,7 +107,7 @@ const Analysis: React.FC = () => {
                     <div key={index} className="top-item">
                       <span className="rank">{index + 1}</span>
                       <span className="name">{track.name}</span>
-                      <span className="count">{track.play_count}</span>
+                      <span className="count">{track.play_count} plays</span>
                     </div>
                   ))}
                 </div>
@@ -115,7 +142,8 @@ const Analysis: React.FC = () => {
                   <Clock size={24} />
                   <div>
                     <h4>Duração Média</h4>
-                    <p>{analysis.listening_patterns.avg_session_duration || 'N/A'}</p>
+                    {/* AQUI ESTÁ A CORREÇÃO DE EXIBIÇÃO: */}
+                    <p>{formatDuration(analysis.listening_patterns.avg_session_duration)}</p>
                   </div>
                 </div>
               </div>

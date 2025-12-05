@@ -16,12 +16,11 @@ class AnalysisService:
         self.db = db
     
     async def generate_user_profile(self, user_id: int, sp: Any = None):
-        # ... (Esta função permanece igual, pode manter a versão anterior)
-        # Para poupar espaço, vou focar na correção do calculate_compatibility abaixo.
-        # Se precisar da função generate_user_profile completa aqui, avise!
-        # Mantenha o código do generate_user_profile que já funcionava.
+        # Observação: aqui mantenho só a parte relevante do generate_user_profile
+        # para contexto da correção que precisamos fazer em calculate_compatibility.
+        # Se precisar da versão completa, posso restaurar.
         
-        # --- CÓDIGO RESUMIDO DO GENERATE PARA CONTEXTO ---
+        # Código resumido do generate_user_profile (apenas para contexto)
         try:
             listening_history = self.db.query(ListeningHistory).filter(ListeningHistory.user_id == user_id).all()
             if not listening_history: return None
@@ -29,6 +28,9 @@ class AnalysisService:
             track_ids = [entry.track_id for entry in listening_history]
             tracks = self.db.query(Track).filter(Track.id.in_(track_ids)).all()
             
+            durations = [t.duration_ms for t in tracks if t.duration_ms]
+            avg_duration = sum(durations) / len(durations) if durations else 0.0
+
             audio_features = []
             for track in tracks:
                 has_any = any([track.danceability, track.energy, track.valence, track.tempo])
@@ -67,6 +69,7 @@ class AnalysisService:
             profile.total_tracks_played = len(listening_history)
             profile.unique_artists = len(set([t.artists for t in tracks if t.artists]))
             profile.unique_genres = len(top_genres)
+            profile.avg_session_duration = float(avg_duration)
             
             self.db.commit()
             self.db.refresh(profile)
@@ -103,13 +106,13 @@ class AnalysisService:
             if t: tracks.append({'id': t.spotify_id, 'name': t.name, 'artists': t.artists, 'play_count': c})
         return tracks
 
-    # --- AQUI COMEÇA A CORREÇÃO CRÍTICA ---
+    # Início da correção
     
     async def calculate_compatibility(self, user1_id: int, user2_id: int) -> Dict[str, Any]:
         """Calcula compatibilidade com Normalização de Tempo e Limpeza de Cache"""
         try:
-            # 1. REMOVER RESULTADOS ANTIGOS (Limpeza)
-            # Apaga qualquer match anterior entre estes dois usuários para garantir dados frescos
+            # 1. Remover resultados antigos (limpeza)
+            # Apaga correspondências anteriores entre os dois usuários para garantir dados atualizados
             self.db.query(CompatibilityScore).filter(
                 ((CompatibilityScore.user1_id == user1_id) & (CompatibilityScore.user2_id == user2_id)) |
                 ((CompatibilityScore.user1_id == user2_id) & (CompatibilityScore.user2_id == user1_id))
@@ -121,9 +124,9 @@ class AnalysisService:
             if not profile1 or not profile2:
                 raise ValueError("Perfis não encontrados")
             
-            # 2. NORMALIZAÇÃO DO TEMPO (A Correção Matemática)
-            # Dividimos o Tempo por 200 (máximo estimado) para que 120bpm vire 0.6
-            # Isso impede que o Tempo "esmague" as outras características.
+            # 2. Normalização do tempo
+            # Dividimos o tempo por 200 (estimativa) para que 120bpm vire 0.6
+            # Isso evita que o tempo tenha peso exagerado nas demais características.
             
             def get_vector(p):
                 return [
@@ -134,24 +137,24 @@ class AnalysisService:
                     p.avg_instrumentalness or 0, 
                     p.avg_liveness or 0,
                     p.avg_speechiness or 0, 
-                    (p.avg_tempo or 0) / 200.0  # <--- AQUI ESTÁ O SEGREDO!
+                    (p.avg_tempo or 0) / 200.0  # ajuste: normalização do tempo
                 ]
 
             audio_features1 = get_vector(profile1)
             audio_features2 = get_vector(profile2)
             
-            # Calculate cosine similarity
+            # calcular similaridade por cosseno entre vetores de áudio
             if np.sum(audio_features1) == 0 or np.sum(audio_features2) == 0:
                 audio_similarity = 0.0
             else:
                 audio_similarity = cosine_similarity([audio_features1], [audio_features2])[0][0]
             
-            # Calculate artist similarity
+            # calcular similaridade de artistas
             artists1 = json.loads(profile1.top_artists) if profile1.top_artists else []
             artists2 = json.loads(profile2.top_artists) if profile2.top_artists else []
             artist_similarity = self._calculate_artist_similarity(artists1, artists2)
             
-            # Calculate common tracks
+            # calcular músicas em comum
             common_tracks = self._get_common_tracks(user1_id, user2_id)
             count_common = len(common_tracks)
             
@@ -160,10 +163,10 @@ class AnalysisService:
             else:
                 track_score = min(1.0, math.log10(max(1, count_common) + 1) / 2.0)
             
-            # Calcular Score Final
+            # calcular score final
             raw_score = (audio_similarity * 0.40) + (artist_similarity * 0.35) + (track_score * 0.25)
             
-            # Fator de Confiança
+            # fator de confiança (com base em histórico)
             total_tracks_1 = profile1.total_tracks_played or 0
             total_tracks_2 = profile2.total_tracks_played or 0
             confidence = (min(1.0, total_tracks_1 / 50.0) + min(1.0, total_tracks_2 / 50.0)) / 2
@@ -171,7 +174,7 @@ class AnalysisService:
             final_score = raw_score * confidence
             final_score = min(1.0, max(0.0, final_score))
             
-            # Salvar
+            # salvar resultado
             compatibility = CompatibilityScore(
                 user1_id=user1_id, user2_id=user2_id, overall_score=final_score,
                 audio_features_similarity=audio_similarity, artist_similarity=artist_similarity,
@@ -180,6 +183,20 @@ class AnalysisService:
             self.db.add(compatibility)
             self.db.commit()
             
+            def make_feature_dict(p):
+                return {
+                    "danceability": p.avg_danceability or 0,
+                    "energy": p.avg_energy or 0,
+                    "valence": p.avg_valence or 0,
+                    "acousticness": p.avg_acousticness or 0,
+                    "instrumentalness": p.avg_instrumentalness or 0,
+                    "liveness": p.avg_liveness or 0,
+                    "speechiness": p.avg_speechiness or 0
+                }
+
+            features1_dict = make_feature_dict(profile1)
+            features2_dict = make_feature_dict(profile2)
+
             return {
                 'overall_score': final_score,
                 'audio_features_similarity': audio_similarity,
@@ -189,7 +206,9 @@ class AnalysisService:
                     'audio_features': audio_similarity,
                     'artists': artist_similarity,
                     'common_tracks_score': track_score
-                }
+                },
+                'user1_features': features1_dict,
+                'user2_features': features2_dict
             }
             
         except Exception as e:
@@ -215,8 +234,8 @@ class AnalysisService:
         ]
 
     async def perform_clustering(self, min_users: int = 10):
-        # ... (Manter código anterior do clustering) ...
-        # (O código do clustering já estava correto na versão anterior)
+        # Manter o código anterior do clustering
+        # (o clustering estava funcionando na versão anterior)
         try:
             profiles = self.db.query(UserProfile).all()
             valid_profiles = [p for p in profiles if p.avg_energy is not None]

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { userAPI, analysisAPI } from '../services/api';
-// 1. IMPORTANTE: Adicione o useNavigate aqui
+import { userAPI, analysisAPI, compatibilityAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Music, Users, Heart, BarChart3, RefreshCw, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,13 +9,13 @@ import './Dashboard.css';
 interface DashboardStats {
   totalTracks: number;
   totalArtists: number;
-  compatibilityScore: number;
+  matchesCount: number;
   clusterId?: number;
+  musicPersona?: string;
 }
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  // 2. Inicialize o hook de navegação
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,18 +29,29 @@ const Dashboard: React.FC = () => {
     try {
       setIsLoading(true);
       
-      const [profileResponse, analysisResponse] = await Promise.all([
+      // Buscamos 3 coisas: Perfil Básico, Análise Detalhada (Persona está aqui!) e Matches
+      const [profileResponse, analysisResponse, matchesResponse] = await Promise.all([
         userAPI.getMusicalProfile().catch(() => null),
-        analysisAPI.getMyAnalysis().catch(() => null)
+        analysisAPI.getMyAnalysis().catch(() => null),
+        compatibilityAPI.getTopMatches().catch(() => ({ data: [] }))
       ]);
 
       if (profileResponse?.data) {
         const profile = profileResponse.data;
+        // CORREÇÃO: Pegamos a análise separadamente para extrair a persona
+        const analysis = analysisResponse?.data;
+
+        console.log("Análise recebida:", analysis); // Debug para você ver no console
+
         setStats({
           totalTracks: profile.total_tracks_played || 0,
           totalArtists: profile.unique_artists || 0,
-          compatibilityScore: 0, 
-          clusterId: profile.cluster_id
+          matchesCount: matchesResponse?.data ? matchesResponse.data.length : 0,
+          clusterId: profile.cluster_id,
+          
+          // --- O PULO DO GATO ESTÁ AQUI ---
+          // Lemos a persona da variável 'analysis', não de 'profile'
+          musicPersona: analysis?.music_persona || "Indefinido"
         });
       }
     } catch (error) {
@@ -56,6 +66,7 @@ const Dashboard: React.FC = () => {
     try {
       setIsSyncing(true);
       await userAPI.syncData();
+      await analysisAPI.performClustering(1);
       toast.success('Dados sincronizados com sucesso!');
       await loadDashboardData();
     } catch (error) {
@@ -120,7 +131,7 @@ const Dashboard: React.FC = () => {
               <Heart size={32} />
             </div>
             <div className="stat-content">
-              <h3>--</h3>
+              <h3>{stats?.matchesCount !== undefined ? stats.matchesCount : '--'}</h3>
               <p>Matches Encontrados</p>
             </div>
           </div>
@@ -130,73 +141,49 @@ const Dashboard: React.FC = () => {
               <BarChart3 size={32} />
             </div>
             <div className="stat-content">
-              <h3>{stats?.clusterId !== null && stats?.clusterId !== undefined ? `Cluster ${stats.clusterId}` : '--'}</h3>
-              <p>Grupo Musical</p>
+              {/* Mostra a Persona se existir, senão o Cluster ID */}
+              <h3 style={{fontSize: stats?.musicPersona && stats.musicPersona.length > 15 ? '1.5rem' : '2rem'}}>
+                {stats?.musicPersona || (stats?.clusterId !== undefined ? `Grupo ${stats.clusterId}` : '--')}
+              </h3>
+              <p>Sua Vibe Musical</p>
             </div>
           </div>
         </div>
 
         <div className="dashboard-actions">
-          {/* CARTÃO 1: COMPATIBILIDADE */}
           <div className="action-card">
             <div className="action-icon">
               <Heart size={48} />
             </div>
             <h3>Encontrar Matches</h3>
             <p>Descubra pessoas com gostos musicais similares aos seus</p>
-            {/* 3. Adicione o onClick aqui */}
-            <button 
-              className="btn btn-primary"
-              onClick={() => navigate('/compatibility')}
-            >
+            <button className="btn btn-primary" onClick={() => navigate('/compatibility')}>
               Explorar Compatibilidade
             </button>
           </div>
 
-          {/* CARTÃO 2: ANÁLISE */}
           <div className="action-card">
             <div className="action-icon">
               <BarChart3 size={48} />
             </div>
             <h3>Análise Detalhada</h3>
             <p>Veja gráficos e estatísticas detalhadas do seu perfil musical</p>
-            {/* 3. Adicione o onClick aqui */}
-            <button 
-              className="btn btn-secondary"
-              onClick={() => navigate('/analysis')}
-            >
+            <button className="btn btn-secondary" onClick={() => navigate('/analysis')}>
               Ver Análise
             </button>
           </div>
 
-          {/* CARTÃO 3: PADRÕES (Vai para Análise também) */}
           <div className="action-card">
             <div className="action-icon">
               <TrendingUp size={48} />
             </div>
             <h3>Padrões de Escuta</h3>
             <p>Analise seus hábitos de escuta e descubra tendências</p>
-            {/* 3. Adicione o onClick aqui */}
-            <button 
-              className="btn btn-secondary"
-              onClick={() => navigate('/analysis')}
-            >
+            <button className="btn btn-secondary" onClick={() => navigate('/analysis')}>
               Ver Padrões
             </button>
           </div>
         </div>
-
-        {!stats && (
-          <div className="empty-state">
-            <Music size={64} />
-            <h2>Nenhum dado encontrado</h2>
-            <p>Conecte-se com o Spotify e sincronize seus dados para começar</p>
-            <button onClick={handleSyncData} className="btn btn-primary">
-              <RefreshCw size={20} />
-              Sincronizar Dados
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
