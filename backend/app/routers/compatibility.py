@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import User, CompatibilityScore, UserProfile
 from app.schemas import CompatibilityScore as CompatibilityScoreSchema, CompatibilityAnalysis
@@ -82,8 +82,11 @@ async def get_top_matches(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Retorna os melhores matches do usuário atual"""
-    scores = db.query(CompatibilityScore).filter(
+    """Retorna os melhores matches do usuário atual com detalhes dos usuários"""
+    scores = db.query(CompatibilityScore).options(
+        joinedload(CompatibilityScore.user1), # <--- Carrega dados do User 1
+        joinedload(CompatibilityScore.user2)  # <--- Carrega dados do User 2
+    ).filter(
         (CompatibilityScore.user1_id == current_user.id) | 
         (CompatibilityScore.user2_id == current_user.id)
     ).order_by(CompatibilityScore.overall_score.desc()).limit(limit).all()

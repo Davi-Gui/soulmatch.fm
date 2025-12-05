@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext'; // Importar Auth
 import { compatibilityAPI } from '../services/api';
-import { Heart, Users, TrendingUp, Search } from 'lucide-react';
+import { Heart, Users, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './Compatibility.css';
 
 const Compatibility: React.FC = () => {
+  const { user } = useAuth(); // Pegar o usuário logado
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchUserId, setSearchUserId] = useState('');
@@ -30,14 +32,32 @@ const Compatibility: React.FC = () => {
       return;
     }
 
+    // Impede comparar consigo mesmo no frontend
+    if (user && parseInt(searchUserId) === user.id) {
+        toast.error('Você não pode calcular compatibilidade consigo mesmo!');
+        return;
+    }
+
     try {
       const response = await compatibilityAPI.calculateCompatibility(parseInt(searchUserId));
       toast.success(`Compatibilidade: ${(response.data.overall_score * 100).toFixed(1)}%`);
+      loadTopMatches(); // Recarrega a lista para mostrar o novo cálculo
     } catch (error) {
       console.error('Erro ao calcular compatibilidade:', error);
-      toast.error('Erro ao calcular compatibilidade');
+      toast.error('Erro ao calcular. Verifique se o ID existe.');
     }
   };
+
+  // Função para deletar um match antigo/errado
+  const handleDeleteScore = async (scoreId: number) => {
+      try {
+          await compatibilityAPI.deleteScore(scoreId);
+          toast.success('Histórico removido');
+          loadTopMatches();
+      } catch (error) {
+          toast.error('Erro ao remover');
+      }
+  }
 
   if (isLoading) {
     return (
@@ -62,7 +82,7 @@ const Compatibility: React.FC = () => {
             <div className="search-input">
               <input
                 type="number"
-                placeholder="Digite o ID do usuário"
+                placeholder="Digite o ID do usuário (ex: 1, 2)"
                 value={searchUserId}
                 onChange={(e) => setSearchUserId(e.target.value)}
               />
@@ -78,15 +98,41 @@ const Compatibility: React.FC = () => {
           <h2>Seus Melhores Matches</h2>
           {matches.length > 0 ? (
             <div className="matches-grid">
-              {matches.map((match) => (
-                <div key={match.id} className="match-card">
-                  <div className="match-score">
-                    <Heart size={24} />
-                    <span>{(match.overall_score * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="match-details">
-                    <h3>Usuário {match.user1_id === 1 ? match.user2_id : match.user1_id}</h3>
-                    <div className="match-breakdown">
+  {matches.map((match) => {
+    // LÓGICA INTELIGENTE:
+    // Se eu sou o user1, então o "outro" é o user2. E vice-versa.
+    // Agora pegamos o OBJETO inteiro, não só o ID.
+    const otherUser = match.user1_id === user?.id ? match.user2 : match.user1;
+    
+    // Fallback de segurança caso o objeto venha vazio (previne crash)
+    const displayName = otherUser?.display_name || `Usuário ${otherUser?.id || 'Desconhecido'}`;
+    const imageUrl = otherUser?.image_url;
+
+    return (
+      <div key={match.id} className="match-card">
+        <div className="match-score">
+          <Heart size={24} />
+          <span>{(match.overall_score * 100).toFixed(1)}%</span>
+        </div>
+        
+        <div className="match-details">
+          {/* AQUI ESTÁ A MUDANÇA VISUAL: Foto + Nome */}
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
+            {imageUrl ? (
+              <img 
+                src={imageUrl} 
+                alt={displayName} 
+                style={{width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover'}} 
+              />
+            ) : (
+              <div style={{width: '40px', height: '40px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <Users size={20} color="white"/>
+              </div>
+            )}
+            <h3 style={{margin: 0, fontSize: '1.3rem'}}>{displayName}</h3>
+          </div>
+
+          <div className="match-breakdown">
                       <div className="breakdown-item">
                         <span>Características de Áudio</span>
                         <span>{(match.audio_features_similarity * 100).toFixed(1)}%</span>
@@ -100,15 +146,23 @@ const Compatibility: React.FC = () => {
                         <span>{match.common_tracks}</span>
                       </div>
                     </div>
+                    {/* Botão para apagar cálculo antigo */}
+                    <button 
+                        onClick={() => handleDeleteScore(match.id)}
+                        className="btn-delete"
+                        style={{marginTop: '15px', background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px'}}
+                    >
+                        <Trash2 size={14} /> Recalcular (Apagar)
+                    </button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
             <div className="empty-matches">
               <Users size={64} />
               <h3>Nenhum match encontrado</h3>
-              <p>Conecte-se com mais usuários para encontrar compatibilidades</p>
+              <p>Digite um ID acima para começar</p>
             </div>
           )}
         </div>

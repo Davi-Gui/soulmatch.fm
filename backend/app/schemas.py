@@ -22,6 +22,14 @@ class User(UserBase):
     class Config:
         from_attributes = True
 
+class UserInfo(BaseModel):
+    id: int
+    display_name: Optional[str] = None
+    image_url: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 # Track Schemas
 class TrackBase(BaseModel):
     spotify_id: str
@@ -103,6 +111,8 @@ class CompatibilityScoreCreate(CompatibilityScoreBase):
 class CompatibilityScore(CompatibilityScoreBase):
     id: int
     analysis_date: datetime
+    user1: Optional[UserInfo] = None
+    user2: Optional[UserInfo] = None
     
     class Config:
         from_attributes = True
