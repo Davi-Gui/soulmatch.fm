@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext'; // Importar Auth
-import { compatibilityAPI } from '../services/api';
-import { Heart, Users, Search, Trash2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { compatibilityAPI, userAPI } from '../services/api';
+import { Heart, Users, Search, Trash2, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './Compatibility.css';
 
 const Compatibility: React.FC = () => {
-  const { user } = useAuth(); // Pegar o usuário logado
+  const { user } = useAuth();
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchUserId, setSearchUserId] = useState('');
+  
+  // Novos estados para a busca
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     loadTopMatches();
@@ -26,29 +30,44 @@ const Compatibility: React.FC = () => {
     }
   };
 
-  const handleSearchCompatibility = async () => {
-    if (!searchUserId) {
-      toast.error('Digite um ID de usuário');
+  // 1. Função que busca o usuário pelo NOME
+  const handleSearchUser = async () => {
+    if (!searchTerm.trim()) {
+      toast.error('Digite um nome para buscar');
       return;
     }
-
-    // Impede comparar consigo mesmo no frontend
-    if (user && parseInt(searchUserId) === user.id) {
-        toast.error('Você não pode calcular compatibilidade consigo mesmo!');
-        return;
-    }
+    
+    setIsSearching(true);
+    setSearchResults([]); // Limpa resultados anteriores
 
     try {
-      const response = await compatibilityAPI.calculateCompatibility(parseInt(searchUserId));
-      toast.success(`Compatibilidade: ${(response.data.overall_score * 100).toFixed(1)}%`);
-      loadTopMatches(); // Recarrega a lista para mostrar o novo cálculo
+      const response = await userAPI.searchUsers(searchTerm);
+      if (response.data.length === 0) {
+        toast('Nenhum usuário encontrado com esse nome', { icon: '🔍' });
+      }
+      setSearchResults(response.data);
     } catch (error) {
-      console.error('Erro ao calcular compatibilidade:', error);
-      toast.error('Erro ao calcular. Verifique se o ID existe.');
+      toast.error('Erro na busca');
+    } finally {
+      setIsSearching(false);
     }
   };
 
-  // Função para deletar um match antigo/errado
+  // 2. Função que calcula usando o ID do usuário encontrado
+  const handleCalculate = async (targetUserId: number, targetUserName: string) => {
+    try {
+      toast.loading(`Calculando com ${targetUserName}...`, { id: 'calc' });
+      const response = await compatibilityAPI.calculateCompatibility(targetUserId);
+      toast.success(`Compatibilidade: ${(response.data.overall_score * 100).toFixed(1)}%`, { id: 'calc' });
+      
+      setSearchResults([]); // Limpa a busca
+      setSearchTerm('');    // Limpa o campo
+      loadTopMatches();     // Atualiza a lista de baixo
+    } catch (error) {
+      toast.error('Erro ao calcular compatibilidade', { id: 'calc' });
+    }
+  };
+
   const handleDeleteScore = async (scoreId: number) => {
       try {
           await compatibilityAPI.deleteScore(scoreId);
@@ -63,7 +82,7 @@ const Compatibility: React.FC = () => {
     return (
       <div className="compatibility-loading">
         <div className="spinner"></div>
-        <p>Carregando compatibilidades...</p>
+        <p>Carregando...</p>
       </div>
     );
   }
@@ -73,72 +92,91 @@ const Compatibility: React.FC = () => {
       <div className="container">
         <div className="compatibility-header">
           <h1>Compatibilidade Musical</h1>
-          <p>Encontre pessoas com gostos musicais similares aos seus</p>
+          <p>Busque amigos pelo nome e descubra o quão parecidos vocês são</p>
         </div>
 
+        {/* --- ÁREA DE BUSCA --- */}
         <div className="search-section">
           <div className="search-card">
-            <h3>Calcular Compatibilidade</h3>
+            <h3>Buscar Usuário</h3>
             <div className="search-input">
               <input
-                type="number"
-                placeholder="Digite o ID do usuário (ex: 1, 2)"
-                value={searchUserId}
-                onChange={(e) => setSearchUserId(e.target.value)}
+                type="text"
+                placeholder="Digite o nome do seu amigo (ex: João)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchUser()}
               />
-              <button onClick={handleSearchCompatibility} className="btn btn-primary">
+              <button onClick={handleSearchUser} className="btn btn-primary" disabled={isSearching}>
                 <Search size={20} />
-                Calcular
+                {isSearching ? 'Buscando...' : 'Buscar'}
               </button>
             </div>
-          </div>
-        </div>
 
-        <div className="matches-section">
-          <h2>Seus Melhores Matches</h2>
-          {matches.length > 0 ? (
-            <div className="matches-grid">
-  {matches.map((match) => {
-    // LÓGICA INTELIGENTE:
-    // Se eu sou o user1, então o "outro" é o user2. E vice-versa.
-    // Agora pegamos o OBJETO inteiro, não só o ID.
-    const otherUser = match.user1_id === user?.id ? match.user2 : match.user1;
-    
-    // Fallback de segurança caso o objeto venha vazio (previne crash)
-    const displayName = otherUser?.display_name || `Usuário ${otherUser?.id || 'Desconhecido'}`;
-    const imageUrl = otherUser?.image_url;
-
-    return (
-      <div key={match.id} className="match-card">
-        <div className="match-score">
-          <Heart size={24} />
-          <span>{(match.overall_score * 100).toFixed(1)}%</span>
-        </div>
-        
-        <div className="match-details">
-          {/* AQUI ESTÁ A MUDANÇA VISUAL: Foto + Nome */}
-          <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
-            {imageUrl ? (
-              <img 
-                src={imageUrl} 
-                alt={displayName} 
-                style={{width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover'}} 
-              />
-            ) : (
-              <div style={{width: '40px', height: '40px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                <Users size={20} color="white"/>
+            {/* Lista de Resultados da Busca */}
+            {searchResults.length > 0 && (
+              <div className="search-results" style={{marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                {searchResults.map((resultUser) => (
+                  <div key={resultUser.id} style={{
+                    background: '#282828', padding: '15px', borderRadius: '8px', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                  }}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                      {resultUser.image_url ? (
+                        <img src={resultUser.image_url} alt={resultUser.display_name} style={{width: '40px', height: '40px', borderRadius: '50%'}} />
+                      ) : (
+                        <div style={{width: '40px', height: '40px', borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center'}}><Users size={20} color="white"/></div>
+                      )}
+                      <span style={{color: 'white', fontWeight: 600}}>{resultUser.display_name}</span>
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleCalculate(resultUser.id, resultUser.display_name)}
+                      className="btn btn-primary"
+                      style={{padding: '8px 16px', fontSize: '0.9rem'}}
+                    >
+                      Ver Match
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
-            <h3 style={{margin: 0, fontSize: '1.3rem'}}>{displayName}</h3>
           </div>
+        </div>
 
-          <div className="match-breakdown">
+        {/* --- LISTA DE MATCHES SALVOS --- */}
+        <div className="matches-section">
+          <h2>Seus Matches Salvos</h2>
+          {matches.length > 0 ? (
+            <div className="matches-grid">
+              {matches.map((match) => {
+                const otherUser = match.user1_id === user?.id ? match.user2 : match.user1;
+                const displayName = otherUser?.display_name || `ID: ${otherUser?.id}`;
+                const imageUrl = otherUser?.image_url;
+
+                return (
+                <div key={match.id} className="match-card">
+                  <div className="match-score">
+                    <Heart size={24} />
+                    <span>{(match.overall_score * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="match-details">
+                    <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={displayName} style={{width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover'}} />
+                      ) : (
+                        <div style={{width: '40px', height: '40px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center'}}><Users size={20} color="white"/></div>
+                      )}
+                      <h3 style={{margin: 0, fontSize: '1.3rem'}}>{displayName}</h3>
+                    </div>
+
+                    <div className="match-breakdown">
                       <div className="breakdown-item">
-                        <span>Características de Áudio</span>
+                        <span>Similaridade Sonora</span>
                         <span>{(match.audio_features_similarity * 100).toFixed(1)}%</span>
                       </div>
                       <div className="breakdown-item">
-                        <span>Artistas</span>
+                        <span>Gosto por Artistas</span>
                         <span>{(match.artist_similarity * 100).toFixed(1)}%</span>
                       </div>
                       <div className="breakdown-item">
@@ -146,13 +184,8 @@ const Compatibility: React.FC = () => {
                         <span>{match.common_tracks}</span>
                       </div>
                     </div>
-                    {/* Botão para apagar cálculo antigo */}
-                    <button 
-                        onClick={() => handleDeleteScore(match.id)}
-                        className="btn-delete"
-                        style={{marginTop: '15px', background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px'}}
-                    >
-                        <Trash2 size={14} /> Recalcular (Apagar)
+                    <button onClick={() => handleDeleteScore(match.id)} className="btn-delete" style={{marginTop: '15px', background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px'}}>
+                        <Trash2 size={14} /> Apagar
                     </button>
                   </div>
                 </div>
@@ -160,9 +193,9 @@ const Compatibility: React.FC = () => {
             </div>
           ) : (
             <div className="empty-matches">
-              <Users size={64} />
-              <h3>Nenhum match encontrado</h3>
-              <p>Digite um ID acima para começar</p>
+              <UserPlus size={64} style={{marginBottom: '16px', color: '#333'}} />
+              <h3>Nenhum match ainda</h3>
+              <p>Busque um amigo acima para calcular!</p>
             </div>
           )}
         </div>

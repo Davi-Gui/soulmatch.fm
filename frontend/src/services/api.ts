@@ -56,6 +56,7 @@ export const userAPI = {
   getRecentTracks: (limit = 50) => 
     api.get(`/users/me/recent?limit=${limit}`),
   getUserProfile: (userId: number) => api.get(`/users/${userId}`),
+  searchUsers: (query: string) => api.get(`/users/search?query=${query}`),
 };
 
 // Compatibility endpoints

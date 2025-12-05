@@ -175,6 +175,24 @@ async def get_recent_tracks(
             detail=f"Erro ao obter músicas recentes: {str(e)}"
         )
 
+@router.get("/search", response_model=List[UserSchema])
+async def search_users(
+    query: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Busca usuários pelo nome (case insensitive)"""
+    if len(query) < 2:
+        return []
+        
+    # Busca por nome similar, excluindo o próprio usuário logado
+    users = db.query(User).filter(
+        User.display_name.ilike(f"%{query}%"),
+        User.id != current_user.id
+    ).limit(10).all()
+    
+    return users
+
 @router.get("/{user_id}", response_model=UserSchema)
 async def get_user_profile(
     user_id: int,
