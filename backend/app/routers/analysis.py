@@ -19,7 +19,7 @@ def determine_music_persona(features: dict) -> str:
     valence = features.get("valence", 0)
     instrumental = features.get("instrumentalness", 0)
     
-    # Lógica de decisão (Regras)
+    # Check in order of specificity - most specific rules first
     if instrumental > 0.5:
         return "Foco & Instrumental"
     
@@ -40,7 +40,7 @@ def determine_music_persona(features: dict) -> str:
         
     if dance > 0.8:
         return "Não Para de Dançar"
-        
+    
     return "Eclético / Explorador"
 
 @router.get("/my-profile", response_model=UserAnalysis)
@@ -57,12 +57,10 @@ async def get_my_analysis(
             detail="Perfil musical não encontrado. Execute a sincronização primeiro."
         )
     
-    # Parse JSON fields
     top_genres = json.loads(profile.top_genres) if profile.top_genres else []
     top_artists = json.loads(profile.top_artists) if profile.top_artists else []
     top_tracks = json.loads(profile.top_tracks) if profile.top_tracks else []
     
-    # Audio features profile
     audio_features_profile = {
         "danceability": profile.avg_danceability,
         "energy": profile.avg_energy,
@@ -74,7 +72,6 @@ async def get_my_analysis(
         "tempo": profile.avg_tempo
     }
     
-    # Listening patterns
     listening_patterns = {
         "total_tracks_played": profile.total_tracks_played,
         "unique_artists": profile.unique_artists,
@@ -101,20 +98,17 @@ async def get_cluster_analysis(
     db: Session = Depends(get_db)
 ):
     """Retorna análise dos clusters de usuários"""
-    # Get all clusters
     clusters = db.query(UserProfile.cluster_id).filter(
         UserProfile.cluster_id.isnot(None)
     ).distinct().all()
     
     cluster_analysis = []
     for (cluster_id,) in clusters:
-        # Get users in this cluster
         cluster_users = db.query(UserProfile).filter(
             UserProfile.cluster_id == cluster_id
         ).all()
         
         if cluster_users:
-            # Calculate cluster averages
             avg_features = {
                 "danceability": sum(p.avg_danceability for p in cluster_users if p.avg_danceability) / len(cluster_users),
                 "energy": sum(p.avg_energy for p in cluster_users if p.avg_energy) / len(cluster_users),
@@ -158,7 +152,6 @@ async def get_listening_patterns(
     db: Session = Depends(get_db)
 ):
     """Retorna padrões de escuta do usuário"""
-    # Get listening history
     listening_history = db.query(ListeningHistory).filter(
         ListeningHistory.user_id == current_user.id
     ).order_by(ListeningHistory.played_at.desc()).limit(1000).all()
@@ -166,7 +159,6 @@ async def get_listening_patterns(
     if not listening_history:
         return {"message": "Nenhum histórico de escuta encontrado"}
     
-    # Analyze listening patterns
     patterns = {
         "total_sessions": len(listening_history),
         "time_distribution": {},
@@ -174,7 +166,7 @@ async def get_listening_patterns(
         "recent_activity": []
     }
     
-    # Time distribution (hour of day)
+    # Count plays by hour of day to see listening patterns
     hour_counts = {}
     for entry in listening_history:
         hour = entry.played_at.hour
@@ -182,7 +174,7 @@ async def get_listening_patterns(
     
     patterns["time_distribution"] = hour_counts
     
-    # Context analysis
+    # Count by context type (playlist, album, etc.)
     context_counts = {}
     for entry in listening_history:
         context_type = entry.context_type or "unknown"
@@ -190,7 +182,6 @@ async def get_listening_patterns(
     
     patterns["context_analysis"] = context_counts
     
-    # Recent activity (last 10 tracks)
     recent_tracks = []
     for entry in listening_history[:10]:
         recent_tracks.append({
@@ -210,8 +201,6 @@ async def get_genre_analysis(
     db: Session = Depends(get_db)
 ):
     """Retorna análise de gêneros musicais"""
-    # This would require genre information from Spotify API
-    # For now, return a placeholder
     return {
         "message": "Análise de gêneros não implementada ainda",
         "note": "Requer integração com API do Spotify para obter informações de gênero"
@@ -231,7 +220,6 @@ async def get_audio_features_radar(
             detail="Perfil musical não encontrado"
         )
     
-    # Prepare data for radar chart
     radar_data = {
         "categories": [
             "Danceability", "Energy", "Valence", "Acousticness",

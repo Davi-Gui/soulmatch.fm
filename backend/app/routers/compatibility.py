@@ -24,7 +24,6 @@ async def calculate_compatibility(
             detail="Não é possível calcular compatibilidade consigo mesmo"
         )
     
-    # Check if user2 exists
     user2 = db.query(User).filter(User.id == user2_id).first()
     if not user2:
         raise HTTPException(
@@ -32,7 +31,7 @@ async def calculate_compatibility(
             detail="Usuário não encontrado"
         )
     
-    # Check if both users have profiles
+    # Both users need to have synced their data first
     profile1 = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
     profile2 = db.query(UserProfile).filter(UserProfile.user_id == user2_id).first()
     
@@ -85,9 +84,10 @@ async def get_top_matches(
     db: Session = Depends(get_db)
 ):
     """Retorna os melhores matches do usuário atual com detalhes dos usuários"""
+    # Use joinedload to avoid N+1 query problem when accessing user data
     scores = db.query(CompatibilityScore).options(
-        joinedload(CompatibilityScore.user1), # <--- Carrega dados do User 1
-        joinedload(CompatibilityScore.user2)  # <--- Carrega dados do User 2
+        joinedload(CompatibilityScore.user1),
+        joinedload(CompatibilityScore.user2)
     ).filter(
         (CompatibilityScore.user1_id == current_user.id) | 
         (CompatibilityScore.user2_id == current_user.id)
@@ -122,7 +122,6 @@ async def get_similar_users(
     db: Session = Depends(get_db)
 ):
     """Retorna usuários com perfil musical similar"""
-    # Get current user's cluster
     current_profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
     
     if not current_profile or current_profile.cluster_id is None:
@@ -131,7 +130,6 @@ async def get_similar_users(
             detail="Usuário não foi clusterizado. Execute a análise de clustering primeiro."
         )
     
-    # Get users in the same cluster
     similar_profiles = db.query(UserProfile).filter(
         UserProfile.cluster_id == current_profile.cluster_id,
         UserProfile.user_id != current_user.id

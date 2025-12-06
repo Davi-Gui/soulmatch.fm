@@ -9,7 +9,6 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -23,7 +22,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -36,7 +34,6 @@ api.interceptors.response.use(
   }
 );
 
-// Auth endpoints
 export const authAPI = {
   getLoginUrl: () => api.get('/auth/login'),
   getMe: () => api.get('/auth/me'),
@@ -44,7 +41,6 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
 };
 
-// User endpoints
 export const userAPI = {
   getProfile: () => api.get('/users/me'),
   getMusicalProfile: () => api.get('/users/me/profile'),
@@ -59,7 +55,6 @@ export const userAPI = {
   searchUsers: (query: string) => api.get(`/users/search?query=${query}`),
 };
 
-// Compatibility endpoints
 export const compatibilityAPI = {
   calculateCompatibility: (userId: number) => 
     api.post(`/compatibility/calculate/${userId}`),
@@ -75,7 +70,6 @@ export const compatibilityAPI = {
     api.delete(`/compatibility/scores/${scoreId}`),
 };
 
-// Analysis endpoints
 export const analysisAPI = {
   getMyAnalysis: () => api.get('/analysis/my-profile'),
   getClusterAnalysis: () => api.get('/analysis/clusters'),

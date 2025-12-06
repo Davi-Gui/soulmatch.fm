@@ -7,10 +7,8 @@ import os
 from app.routers import auth, users, compatibility, analysis
 from app.database import engine, Base
 
-# Load environment variables
 load_dotenv()
 
-# Create database tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -19,7 +17,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -28,7 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(compatibility.router, prefix="/compatibility", tags=["compatibility"])

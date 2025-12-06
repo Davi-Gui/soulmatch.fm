@@ -39,20 +39,16 @@ async def sync_user_data(
 ):
     """Sincroniza dados do usuário com o Spotify"""
     try:
-        # Get Spotify client
         try:
             sp = get_spotify_client(current_user)
         except HTTPException:
-            # Try to refresh token
+            # Token might be expired, try refreshing it
             sp = refresh_spotify_token(current_user, db)
         
-        # Initialize data collection service
         data_service = DataCollectionService(db)
-        
-        # Sync user data
         await data_service.sync_user_listening_history(current_user.id, sp)
         
-        # Generate/update user profile
+        # Generate profile after syncing history
         analysis_service = AnalysisService(db)
         await analysis_service.generate_user_profile(current_user.id, sp)
         
@@ -75,16 +71,14 @@ async def get_my_tracks(
     try:
         sp = get_spotify_client(current_user)
         
-        # Get top tracks from Spotify
         top_tracks = sp.current_user_top_tracks(limit=limit, offset=offset, time_range='medium_term')
         
         tracks = []
         for track_data in top_tracks['items']:
-            # Check if track exists in database
+            # Check if we already have this track in DB, otherwise create it
             db_track = db.query(Track).filter(Track.spotify_id == track_data['id']).first()
             
             if not db_track:
-                # Create new track
                 db_track = Track(
                     spotify_id=track_data['id'],
                     name=track_data['name'],
@@ -184,7 +178,6 @@ async def search_users(
     if len(query) < 2:
         return []
         
-    # Busca por nome similar, excluindo o próprio usuário logado
     users = db.query(User).filter(
         User.display_name.ilike(f"%{query}%"),
         User.id != current_user.id

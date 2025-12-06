@@ -7,7 +7,6 @@ import json
 
 from app.models import Track, ListeningHistory
 
-# --- CACHE GLOBAL DO DATASET ---
 _tracks_df = None
 
 def get_tracks_dataset():
@@ -23,30 +22,21 @@ def get_tracks_dataset():
                 print(f"ARQUIVO NÃO ENCONTRADO: {csv_path}")
                 return pd.DataFrame()
 
-            # correções locais para leitura do CSV
-            # 1. Definimos os nomes esperados (pode ser 'track_id' no CSV)
-            # Ajuste 'track_id' abaixo se o seu script do Passo 1 mostrou outro nome!
             col_mapping = {'track_id': 'id'} 
             
-            # 2. Carregamos as colunas originais do CSV
-            # Nota: removemos 'id' da lista de usecols e colocamos 'track_id'
             cols_to_load = [
                 'track_id', 'danceability', 'energy', 'key', 'loudness', 'mode', 
                 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 
                 'valence', 'tempo', 'time_signature'
             ]
             
-            # 3. Carregamos e renomeamos imediatamente
             _tracks_df = pd.read_csv(csv_path, usecols=cols_to_load)
             _tracks_df.rename(columns=col_mapping, inplace=True)
-            
-            # 4. Definimos o ID como índice DEPOIS de carregar e renomear
             _tracks_df.set_index('id', inplace=True)
             
             print(f"Dataset carregado com sucesso ({len(_tracks_df)} músicas)")
             
         except ValueError as ve:
-            # Este erro captura especificamente o problema das colunas
             print(f"Erro de colunas: {ve}")
             print("   Dica: verifique se o nome 'track_id' existe no seu CSV usando o script check_columns.py")
             _tracks_df = pd.DataFrame()
@@ -62,7 +52,7 @@ class DataCollectionService:
         self.dataset = get_tracks_dataset()
     
     def _enrich_track_from_csv(self, db_track):
-        """Função auxiliar para preencher dados do CSV numa faixa existente"""
+        # Try to get audio features from the CSV dataset if Spotify API doesn't have them
         if self.dataset.empty:
             return False
 
@@ -72,7 +62,6 @@ class DataCollectionService:
             try:
                 features = self.dataset.loc[spotify_id]
                 
-                # atualiza os campos
                 db_track.danceability = float(features['danceability'])
                 db_track.energy = float(features['energy'])
                 db_track.key = int(features['key'])
@@ -102,14 +91,11 @@ class DataCollectionService:
                 played_at = datetime.fromisoformat(item['played_at'].replace('Z', '+00:00'))
                 spotify_id = track_data['id']
                 
-                # 1. Verifica se a música existe
                 db_track = self.db.query(Track).filter(Track.spotify_id == spotify_id).first()
-                
-                # Flag para saber se precisamos salvar mudanças na música
-                track_modified = False
+                track_modified = False  # Track if we need to commit changes to the track
 
                 if not db_track:
-                    # Se não existe, CRIA a música básica
+                    # Create new track entry from Spotify data
                     db_track = Track(
                         spotify_id=spotify_id,
                         name=track_data['name'],
@@ -124,24 +110,18 @@ class DataCollectionService:
                     self.db.add(db_track)
                     track_modified = True
                 
-                # 2. VERIFICAÇÃO DE DADOS (A CORREÇÃO ESTÁ AQUI)
-                # Se a música existe mas não tem dados (danceability é None), tenta buscar no CSV
+                # If track exists but missing audio features, try to get them from CSV
                 if db_track.danceability is None:
                     found = self._enrich_track_from_csv(db_track)
                     if found:
                         print(f"Dados recuperados do CSV para: {db_track.name}")
                         track_modified = True
-                    else:
-                        # Se não achou no CSV, imprime aviso (provavelmente música nova pós-2021)
-                        # aqui não achamos dados no CSV para essa faixa
-                        pass
 
-                # Commit apenas se houve mudança na tabela de músicas
+                # Only commit if we actually changed something
                 if track_modified:
                     self.db.commit()
                     self.db.refresh(db_track)
                 
-                # 3. Salva o Histórico (Quem ouviu e quando)
                 existing_entry = self.db.query(ListeningHistory).filter(
                     ListeningHistory.user_id == user_id,
                     ListeningHistory.track_id == db_track.id,
@@ -155,7 +135,7 @@ class DataCollectionService:
                         track_id=db_track.id,
                         played_at=played_at,
                         context_type=context.get('type'),
-                        context_name=context.get('name') # Simplificado pois name pode não vir
+                        context_name=context.get('name')
                     )
                     self.db.add(history_entry)
             

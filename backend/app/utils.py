@@ -14,8 +14,8 @@ from app.models import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Cria um token JWT"""
     to_encode = data.copy()
+    # Use custom expiration or default from settings
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
@@ -26,7 +26,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 def verify_token(token: str, credentials_exception):
-    """Verifica e decodifica um token JWT"""
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         user_id: str = payload.get("sub")
@@ -37,7 +36,6 @@ def verify_token(token: str, credentials_exception):
         raise credentials_exception
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Obtém o usuário atual baseado no token JWT"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -51,14 +49,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 def get_spotify_client(user: User) -> spotipy.Spotify:
-    """Obtém um cliente Spotify autenticado para o usuário"""
     if not user.access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário não autenticado com Spotify"
         )
     
-    # Check if token is expired
+    # Check if token expired before creating client
     if user.token_expires_at and user.token_expires_at <= datetime.utcnow():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -68,7 +65,6 @@ def get_spotify_client(user: User) -> spotipy.Spotify:
     return spotipy.Spotify(auth=user.access_token)
 
 def refresh_spotify_token(user: User, db: Session):
-    """Atualiza o token do Spotify se necessário"""
     if not user.refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

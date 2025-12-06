@@ -16,11 +16,6 @@ class AnalysisService:
         self.db = db
     
     async def generate_user_profile(self, user_id: int, sp: Any = None):
-        # Observação: aqui mantenho só a parte relevante do generate_user_profile
-        # para contexto da correção que precisamos fazer em calculate_compatibility.
-        # Se precisar da versão completa, posso restaurar.
-        
-        # Código resumido do generate_user_profile (apenas para contexto)
         try:
             listening_history = self.db.query(ListeningHistory).filter(ListeningHistory.user_id == user_id).all()
             if not listening_history: return None
@@ -31,6 +26,7 @@ class AnalysisService:
             durations = [t.duration_ms for t in tracks if t.duration_ms]
             avg_duration = sum(durations) / len(durations) if durations else 0.0
 
+            # Collect audio features, only include tracks that have at least some features
             audio_features = []
             for track in tracks:
                 has_any = any([track.danceability, track.energy, track.valence, track.tempo])
@@ -41,6 +37,7 @@ class AnalysisService:
                         track.speechiness or 0.0, track.tempo or 0.0
                     ])
             
+            # Calculate average across all tracks
             if not audio_features:
                 avg_features = np.zeros(8)
             else:
@@ -106,13 +103,8 @@ class AnalysisService:
             if t: tracks.append({'id': t.spotify_id, 'name': t.name, 'artists': t.artists, 'play_count': c})
         return tracks
 
-    # Início da correção
-    
     async def calculate_compatibility(self, user1_id: int, user2_id: int) -> Dict[str, Any]:
-        """Calcula compatibilidade com Normalização de Tempo e Limpeza de Cache"""
         try:
-            # 1. Remover resultados antigos (limpeza)
-            # Apaga correspondências anteriores entre os dois usuários para garantir dados atualizados
             self.db.query(CompatibilityScore).filter(
                 ((CompatibilityScore.user1_id == user1_id) & (CompatibilityScore.user2_id == user2_id)) |
                 ((CompatibilityScore.user1_id == user2_id) & (CompatibilityScore.user2_id == user1_id))
@@ -124,11 +116,8 @@ class AnalysisService:
             if not profile1 or not profile2:
                 raise ValueError("Perfis não encontrados")
             
-            # 2. Normalização do tempo
-            # Dividimos o tempo por 200 (estimativa) para que 120bpm vire 0.6
-            # Isso evita que o tempo tenha peso exagerado nas demais características.
-            
             def get_vector(p):
+                # Normalize tempo by dividing by 200 so it's in similar scale to other features (0-1 range)
                 return [
                     p.avg_danceability or 0, 
                     p.avg_energy or 0, 
@@ -137,44 +126,42 @@ class AnalysisService:
                     p.avg_instrumentalness or 0, 
                     p.avg_liveness or 0,
                     p.avg_speechiness or 0, 
-                    (p.avg_tempo or 0) / 200.0  # ajuste: normalização do tempo
+                    (p.avg_tempo or 0) / 200.0
                 ]
 
             audio_features1 = get_vector(profile1)
             audio_features2 = get_vector(profile2)
             
-            # calcular similaridade por cosseno entre vetores de áudio
+            # Handle edge case where user has no audio features
             if np.sum(audio_features1) == 0 or np.sum(audio_features2) == 0:
                 audio_similarity = 0.0
             else:
                 audio_similarity = cosine_similarity([audio_features1], [audio_features2])[0][0]
             
-            # calcular similaridade de artistas
             artists1 = json.loads(profile1.top_artists) if profile1.top_artists else []
             artists2 = json.loads(profile2.top_artists) if profile2.top_artists else []
             artist_similarity = self._calculate_artist_similarity(artists1, artists2)
             
-            # calcular músicas em comum
             common_tracks = self._get_common_tracks(user1_id, user2_id)
             count_common = len(common_tracks)
             
+            # Use logarithmic scaling so having 10 common tracks isn't 10x better than 1
             if count_common == 0:
                 track_score = 0.0
             else:
                 track_score = min(1.0, math.log10(max(1, count_common) + 1) / 2.0)
             
-            # calcular score final
+            # Weighted combination: audio features matter most, then artists, then common tracks
             raw_score = (audio_similarity * 0.40) + (artist_similarity * 0.35) + (track_score * 0.25)
             
-            # fator de confiança (com base em histórico)
+            # Confidence factor based on listening history - need at least 50 tracks for full confidence
             total_tracks_1 = profile1.total_tracks_played or 0
             total_tracks_2 = profile2.total_tracks_played or 0
             confidence = (min(1.0, total_tracks_1 / 50.0) + min(1.0, total_tracks_2 / 50.0)) / 2
             
             final_score = raw_score * confidence
-            final_score = min(1.0, max(0.0, final_score))
+            final_score = min(1.0, max(0.0, final_score))  # Clamp between 0 and 1
             
-            # salvar resultado
             compatibility = CompatibilityScore(
                 user1_id=user1_id, user2_id=user2_id, overall_score=final_score,
                 audio_features_similarity=audio_similarity, artist_similarity=artist_similarity,
@@ -216,6 +203,7 @@ class AnalysisService:
             raise e
 
     def _calculate_artist_similarity(self, artists1: List[Dict], artists2: List[Dict]) -> float:
+        # Jaccard similarity with penalty if both users have too few artists
         if not artists1 or not artists2: return 0.0
         names1 = set([a['name'] for a in artists1])
         names2 = set([a['name'] for a in artists2])
@@ -234,13 +222,12 @@ class AnalysisService:
         ]
 
     async def perform_clustering(self, min_users: int = 10):
-        # Manter o código anterior do clustering
-        # (o clustering estava funcionando na versão anterior)
         try:
             profiles = self.db.query(UserProfile).all()
             valid_profiles = [p for p in profiles if p.avg_energy is not None]
             if len(valid_profiles) < min_users: return {"message": "Poucos usuários"}
             
+            # Build feature matrix for clustering
             features = []
             p_ids = []
             for p in valid_profiles:
@@ -251,8 +238,10 @@ class AnalysisService:
                 ])
                 p_ids.append(p.id)
                 
+            # Standardize features so all have equal weight in clustering
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(features)
+            # Dynamic cluster count: roughly 1 cluster per 3 users, but between 2 and 5
             kmeans = KMeans(n_clusters=min(5, max(2, len(valid_profiles)//3)), random_state=42)
             labels = kmeans.fit_predict(features_scaled)
             
