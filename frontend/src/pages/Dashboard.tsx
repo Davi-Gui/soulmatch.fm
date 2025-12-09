@@ -29,7 +29,6 @@ const Dashboard: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Buscamos 3 coisas: Perfil Básico, Análise Detalhada (Persona está aqui!) e Matches
       const [profileResponse, analysisResponse, matchesResponse] = await Promise.all([
         userAPI.getMusicalProfile().catch(() => null),
         analysisAPI.getMyAnalysis().catch(() => null),
@@ -38,19 +37,13 @@ const Dashboard: React.FC = () => {
 
       if (profileResponse?.data) {
         const profile = profileResponse.data;
-        // CORREÇÃO: Pegamos a análise separadamente para extrair a persona
         const analysis = analysisResponse?.data;
-
-        console.log("Análise recebida:", analysis); // Debug para você ver no console
 
         setStats({
           totalTracks: profile.total_tracks_played || 0,
           totalArtists: profile.unique_artists || 0,
           matchesCount: matchesResponse?.data ? matchesResponse.data.length : 0,
           clusterId: profile.cluster_id,
-          
-          // --- O PULO DO GATO ESTÁ AQUI ---
-          // Lemos a persona da variável 'analysis', não de 'profile'
           musicPersona: analysis?.music_persona || "Indefinido"
         });
       }
@@ -141,7 +134,6 @@ const Dashboard: React.FC = () => {
               <BarChart3 size={32} />
             </div>
             <div className="stat-content">
-              {/* Mostra a Persona se existir, senão o Cluster ID */}
               <h3 style={{fontSize: stats?.musicPersona && stats.musicPersona.length > 15 ? '1.5rem' : '2rem'}}>
                 {stats?.musicPersona || (stats?.clusterId !== undefined ? `Grupo ${stats.clusterId}` : '--')}
               </h3>
@@ -157,7 +149,10 @@ const Dashboard: React.FC = () => {
             </div>
             <h3>Encontrar Matches</h3>
             <p>Descubra pessoas com gostos musicais similares aos seus</p>
-            <button className="btn btn-primary" onClick={() => navigate('/compatibility')}>
+            <button 
+              className="btn btn-primary"
+              onClick={() => navigate('/compatibility')}
+            >
               Explorar Compatibilidade
             </button>
           </div>
@@ -168,7 +163,10 @@ const Dashboard: React.FC = () => {
             </div>
             <h3>Análise Detalhada</h3>
             <p>Veja gráficos e estatísticas detalhadas do seu perfil musical</p>
-            <button className="btn btn-secondary" onClick={() => navigate('/analysis')}>
+            <button 
+              className="btn btn-secondary"
+              onClick={() => navigate('/analysis')}
+            >
               Ver Análise
             </button>
           </div>
@@ -179,7 +177,10 @@ const Dashboard: React.FC = () => {
             </div>
             <h3>Padrões de Escuta</h3>
             <p>Analise seus hábitos de escuta e descubra tendências</p>
-            <button className="btn btn-secondary" onClick={() => navigate('/analysis')}>
+            <button 
+              className="btn btn-secondary"
+              onClick={() => navigate('/analysis')}
+            >
               Ver Padrões
             </button>
           </div>

@@ -45,7 +45,7 @@ const Compatibility: React.FC = () => {
     try {
       const response = await userAPI.searchUsers(searchTerm);
       if (response.data.length === 0) {
-        toast('Nenhum usuário encontrado com esse nome', { icon: '🔍' });
+        toast('Nenhum usuário encontrado com esse nome');
       }
       setSearchResults(response.data);
     } catch (error) {
