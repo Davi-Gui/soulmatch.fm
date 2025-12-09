@@ -13,11 +13,6 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // If user is already logged in, redirect to dashboard
-    if (user) {
-      navigate('/dashboard');
-      return;
-    }
 
     // Check if this is a callback from Spotify
     const code = searchParams.get('code');
@@ -30,6 +25,12 @@ const Login: React.FC = () => {
 
     if (code) {
       handleSpotifyCallback(code);
+    }
+
+        // If user is already logged in, redirect to dashboard
+    if (user) {
+      navigate('/dashboard');
+      return;
     }
   }, [user, navigate, searchParams]);
 

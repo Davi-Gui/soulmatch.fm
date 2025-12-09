@@ -20,13 +20,17 @@ sp_oauth = SpotifyOAuth(
     client_id=settings.spotify_client_id,
     client_secret=settings.spotify_client_secret,
     redirect_uri=settings.spotify_redirect_uri,
-    scope="user-read-recently-played user-top-read user-read-private user-read-email"
+    scope="user-read-recently-played user-top-read user-read-private user-read-email",
+    show_dialog=True,
+    cache_handler=None
 )
 
 @router.get("/login")
 async def spotify_login():
     """Inicia o processo de autenticação com Spotify"""
     auth_url = sp_oauth.get_authorize_url()
+    if "show_dialog=true" not in auth_url:
+        auth_url += "&show_dialog=true"
     return {"auth_url": auth_url}
 
 @router.get("/callback")

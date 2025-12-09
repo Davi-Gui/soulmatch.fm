@@ -221,35 +221,163 @@ class AnalysisService:
             for t in self.db.query(Track).filter(Track.id.in_(common_ids)).all()
         ]
 
-    async def perform_clustering(self, min_users: int = 10):
+# ... (outros métodos da classe acima: generate_user_profile, calculate_compatibility, etc)
+
+    # CORREÇÃO 1: Mantenha este método COM O MESMO RECUO (TAB) dos outros métodos da classe
+    async def perform_clustering(self, min_users: int = 2): # Reduzi para 2 para facilitar testes
         try:
+            print("🚀 Iniciando Clusterização...")
             profiles = self.db.query(UserProfile).all()
-            valid_profiles = [p for p in profiles if p.avg_energy is not None]
-            if len(valid_profiles) < min_users: return {"message": "Poucos usuários"}
             
-            # Build feature matrix for clustering
+            # Filtra usuários que já têm médias calculadas
+            valid_profiles = [p for p in profiles if p.avg_energy is not None]
+            
+            print(f"👥 Usuários válidos: {len(valid_profiles)}")
+
+            # CORREÇÃO 3: Retorna JSON seguro mesmo com poucos usuários
+            if len(valid_profiles) < min_users:
+                print("⚠️ Usuários insuficientes. Cancelando clusterização de forma segura.")
+                return {
+                    "status": "skipped",
+                    "message": f"Clusterização requer {min_users} usuários. Encontrados: {len(valid_profiles)}",
+                    "clusters_formed": 0
+                }
+
+            # Prepara dados para o Scikit-Learn
             features = []
             p_ids = []
             for p in valid_profiles:
                 features.append([
-                    p.avg_danceability or 0, p.avg_energy or 0, p.avg_valence or 0,
-                    p.avg_acousticness or 0, p.avg_instrumentalness or 0, p.avg_liveness or 0,
-                    p.avg_speechiness or 0, p.avg_tempo or 0
+                    float(p.avg_danceability or 0), 
+                    float(p.avg_energy or 0), 
+                    float(p.avg_valence or 0),
+                    float(p.avg_acousticness or 0), 
+                    float(p.avg_instrumentalness or 0), 
+                    float(p.avg_liveness or 0),
+                    float(p.avg_speechiness or 0), 
+                    float(p.avg_tempo or 0)
                 ])
                 p_ids.append(p.id)
                 
-            # Standardize features so all have equal weight in clustering
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(features)
-            # Dynamic cluster count: roughly 1 cluster per 3 users, but between 2 and 5
-            kmeans = KMeans(n_clusters=min(5, max(2, len(valid_profiles)//3)), random_state=42)
+            
+            # Lógica dinâmica de K (clusters)
+            n_samples = len(valid_profiles)
+            if n_samples < 2:
+                # Segurança extra caso min_users seja alterado externamente
+                return {"status": "skipped", "message": "Dados insuficientes para K-Means."}
+
+            desired_k = min(5, max(2, n_samples // 3))
+            k = min(desired_k, n_samples - 1) # Garante que K < N
+            
+            if k < 2: k = 2 # Força mínimo de 2 se houver usuários suficientes
+
+            print(f"🧮 Rodando KMeans com k={k} para {n_samples} usuários...")
+            
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
             labels = kmeans.fit_predict(features_scaled)
             
-            for i, pid in enumerate(p_ids):
-                p = self.db.query(UserProfile).filter(UserProfile.id == pid).first()
-                if p: p.cluster_id = int(labels[i])
+            # Atualiza no banco
+            for index, pid in enumerate(p_ids):
+                user_to_update = next((p for p in valid_profiles if p.id == pid), None)
+                if user_to_update:
+                    # Se der erro aqui, é porque a coluna cluster_id não existe no DB
+                    user_to_update.cluster_id = int(labels[index])
+            
             self.db.commit()
-            return {"message": "Clustering ok"}
+            print("✅ Clusterização salva com sucesso!")
+            
+            return {
+                "status": "success",
+                "message": f"Clusterização concluída! {k} grupos formados.",
+                "clusters_formed": k
+            }
+            
         except Exception as e:
             self.db.rollback()
-            raise e
+            # ISSO VAI MOSTRAR O ERRO REAL NO SEU TERMINAL:
+            import traceback
+            traceback.print_exc() 
+            print(f"🚨 ERRO FATAL NO CLUSTERING: {str(e)}")
+            # Retorna um erro legível em vez de estourar 500 (opcional, ajuda o front)
+            return {"status": "error", "message": str(e)}
+        try:
+            profiles = self.db.query(UserProfile).all()
+            
+            # Filtra usuários que já têm médias calculadas
+            valid_profiles = [p for p in profiles if p.avg_energy is not None]
+            
+            # LOG PARA DEBUG
+            print(f"👥 Usuários válidos para cluster: {len(valid_profiles)} (Mínimo exigido: {min_users})")
+
+            if len(valid_profiles) < min_users:
+                return {"message": f"Poucos usuários com dados ({len(valid_profiles)}/{min_users}). Continue sincronizando!"}
+            
+            # Se tivermos poucos usuários (ex: teste com 1 ou 2), não dá pra clusterizar
+            if len(valid_profiles) < 2:
+                 return {"message": "Clusterização requer pelo menos 2 usuários com dados."}
+
+            # Build feature matrix
+            features = []
+            p_ids = []
+            for p in valid_profiles:
+                features.append([
+                    float(p.avg_danceability or 0), 
+                    float(p.avg_energy or 0), 
+                    float(p.avg_valence or 0),
+                    float(p.avg_acousticness or 0), 
+                    float(p.avg_instrumentalness or 0), 
+                    float(p.avg_liveness or 0),
+                    float(p.avg_speechiness or 0), 
+                    float(p.avg_tempo or 0)
+                ])
+                p_ids.append(p.id)
+                
+            scaler = StandardScaler()
+            features_scaled = scaler.fit_transform(features)
+            
+            # CORREÇÃO DO ERRO MATEMÁTICO:
+            # O número de clusters (k) não pode ser maior que o número de amostras (n_samples)
+            n_samples = len(valid_profiles)
+            
+            # Tenta criar 1 cluster a cada 3 pessoas, mas no mínimo 2 e no máximo 5
+            desired_k = min(5, max(2, n_samples // 3))
+            
+            # Proteção final: K não pode ser maior que N-1 (idealmente) ou N
+            k = min(desired_k, n_samples)
+            
+            # Se k for igual a n_samples, cada um fica no seu cluster (edge case)
+            if k >= n_samples:
+                k = max(1, n_samples - 1) 
+            
+            if k < 2:
+                 return {"message": "Dados insuficientes para formar múltiplos clusters."}
+
+            print(f"🧮 Rodando KMeans com {k} clusters para {n_samples} usuários...")
+            
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+            labels = kmeans.fit_predict(features_scaled)
+            
+            # Atualização otimizada
+            for index, pid in enumerate(p_ids):
+                # Não precisa buscar no banco de novo se você já tem o objeto na lista valid_profiles
+                # Mas para garantir que estamos na sessão certa:
+                user_to_update = next((p for p in valid_profiles if p.id == pid), None)
+                if user_to_update:
+                    user_to_update.cluster_id = int(labels[index])
+            
+            self.db.commit()
+            return {"message": f"Clusterização concluída! {k} grupos formados."}
+            
+        except Exception as e:
+                self.db.rollback()
+                
+                # --- ADICIONE ISTO ---
+                print("\n🚨 ERRO NO CLUSTERING ENCONTRADO:")
+                import traceback
+                traceback.print_exc() # Imprime o erro detalhado no terminal
+                print("🚨 FIM DO ERRO\n")
+                # ---------------------
+                
+                raise e
