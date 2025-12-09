@@ -26,3 +26,7 @@ yarn-error.log
 .DS_Store
 Thumbs.db
 backend/.cache
+
+
+backend/.cache/
+backend/data/spotify_features.csv

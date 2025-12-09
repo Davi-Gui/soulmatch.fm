@@ -13,35 +13,54 @@ def get_tracks_dataset():
     global _tracks_df
     if _tracks_df is None:
         try:
+            # 1. Resolve o caminho (Mantive sua lógica, ajuste se necessário)
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             csv_path = os.path.join(base_dir, 'data', 'spotify_features.csv')
             
-            print(f"Tentando carregar dataset de: {csv_path}")
-            
+            print(f"📂 Lendo CSV de: {csv_path}")
+
             if not os.path.exists(csv_path):
-                print(f"ARQUIVO NÃO ENCONTRADO: {csv_path}")
+                print(f"❌ ARQUIVO NÃO ENCONTRADO EM: {csv_path}")
                 return pd.DataFrame()
 
-            col_mapping = {'track_id': 'id'} 
+            # 2. Descobre os nomes reais das colunas lendo apenas o cabeçalho
+            sample_df = pd.read_csv(csv_path, nrows=0)
+            existing_cols = set(sample_df.columns)
             
-            cols_to_load = [
-                'track_id', 'danceability', 'energy', 'key', 'loudness', 'mode', 
+            # 3. Define qual é a coluna de ID (se adapta se for 'id' ou 'track_id')
+            id_col = 'track_id' if 'track_id' in existing_cols else 'id'
+            
+            if id_col not in existing_cols:
+                print(f"❌ Erro Crítico: O CSV não tem coluna 'id' nem 'track_id'. Colunas encontradas: {list(existing_cols)}")
+                return pd.DataFrame()
+
+            # 4. Monta a lista de colunas que realmente existem no CSV
+            # (Isso evita erro se faltar 'time_signature' por exemplo)
+            desired_cols = [
+                'danceability', 'energy', 'key', 'loudness', 'mode', 
                 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 
                 'valence', 'tempo', 'time_signature'
             ]
             
+            # Filtra apenas as que existem no arquivo para não dar erro
+            cols_to_load = [col for col in desired_cols if col in existing_cols]
+            cols_to_load.append(id_col) # Adiciona o ID confirmado
+            
+            # 5. Carrega os dados com segurança
             _tracks_df = pd.read_csv(csv_path, usecols=cols_to_load)
-            _tracks_df.rename(columns=col_mapping, inplace=True)
+            
+            # Renomeia para padronizar como 'id' se necessário
+            if id_col != 'id':
+                _tracks_df.rename(columns={id_col: 'id'}, inplace=True)
+            
             _tracks_df.set_index('id', inplace=True)
             
-            print(f"Dataset carregado com sucesso ({len(_tracks_df)} músicas)")
+            print(f"✅ Dataset carregado! {_tracks_df.shape[0]} músicas, {_tracks_df.shape[1]} features.")
             
-        except ValueError as ve:
-            print(f"Erro de colunas: {ve}")
-            print("   Dica: verifique se o nome 'track_id' existe no seu CSV usando o script check_columns.py")
-            _tracks_df = pd.DataFrame()
         except Exception as e:
-            print(f"Erro ao carregar CSV: {e}")
+            print(f"❌ Erro fatal ao carregar CSV: {e}")
+            import traceback
+            traceback.print_exc()
             _tracks_df = pd.DataFrame()
             
     return _tracks_df
