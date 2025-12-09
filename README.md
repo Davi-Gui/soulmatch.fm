@@ -1,7 +1,7 @@
 # SoulMatch.fm - Compatibilidade Musical
 
 **Projeto Interdisciplinar (PID) – CEFET-MG**  
-Equipe: Davi Gumarães, João Paulo Lacerda e João Victor de Carvalho / Ano: 2025
+Equipe: Davi Guimarães, João Paulo Lacerda e João Victor de Carvalho / Ano: 2025
 
 ---
 
@@ -264,7 +264,7 @@ Este projeto foi pensado com potencial de uso prático fora do ambiente acadêmi
 ## Contato
 
 **Equipe SoulMatch.fm**
-- Davi Gumarães
+- Davi Guimarães
 - João Paulo Lacerda  
 - João Victor de Carvalho
 
