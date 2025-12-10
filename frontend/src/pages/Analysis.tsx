@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { analysisAPI } from '../services/api';
-import { BarChart3, TrendingUp, Clock, Music } from 'lucide-react';
+import { BarChart3, TrendingUp, Clock, Music, ListMusic, Tags } from 'lucide-react';
 import './Analysis.css';
 
 const Analysis: React.FC = () => {
   const [analysis, setAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showGenres, setShowGenres] = useState(false);
 
   useEffect(() => {
     loadAnalysis();
@@ -22,7 +23,6 @@ const Analysis: React.FC = () => {
     }
   };
 
-  // --- NOVA FUNÇÃO DE FORMATAÇÃO ---
   const formatDuration = (ms: number) => {
     if (!ms) return '0 min';
     const minutes = Math.floor(ms / 60000);
@@ -52,7 +52,6 @@ const Analysis: React.FC = () => {
             <div className="audio-features">
               <h2>Características de Áudio</h2>
               <div className="features-grid">
-                {/* Mapeamento de nomes para Português */}
                 {Object.entries(analysis.audio_features_profile).map(([key, value]) => {
                   const labels: {[key: string]: string} = {
                     danceability: 'Dançabilidade',
@@ -65,7 +64,6 @@ const Analysis: React.FC = () => {
                     tempo: 'Tempo (BPM)'
                   };
                   
-                  // Tratamento especial para o Tempo (que não é porcentagem)
                   const isTempo = key === 'tempo';
                   const displayValue = isTempo ? Math.round(value as number) : (value as number).toFixed(2);
                   const barWidth = isTempo ? Math.min((value as number) / 200 * 100, 100) : (value as number) * 100;
@@ -101,15 +99,46 @@ const Analysis: React.FC = () => {
               </div>
 
               <div className="top-tracks">
-                <h3>Top Músicas</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ margin: 0 }}>{showGenres ? 'Top Gêneros' : 'Top Músicas'}</h3>
+                  <button 
+                    onClick={() => setShowGenres(!showGenres)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #333',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      color: '#1db954',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    {showGenres ? <ListMusic size={18} /> : <Tags size={18} />}
+                    {showGenres ? 'Ver Músicas' : 'Ver Gêneros'}
+                  </button>
+                </div>
+                
                 <div className="top-list">
-                  {analysis.top_tracks.slice(0, 10).map((track: any, index: number) => (
-                    <div key={index} className="top-item">
-                      <span className="rank">{index + 1}</span>
-                      <span className="name">{track.name}</span>
-                      <span className="count">{track.play_count} plays</span>
-                    </div>
-                  ))}
+                  {showGenres ? (
+                    analysis.top_genres.slice(0, 10).map((genre: string, index: number) => (
+                      <div key={index} className="top-item">
+                        <span className="rank">{index + 1}</span>
+                        <span className="name" style={{ textTransform: 'capitalize' }}>{genre}</span>
+                        <span className="count"></span>
+                      </div>
+                    ))
+                  ) : (
+                    analysis.top_tracks.slice(0, 10).map((track: any, index: number) => (
+                      <div key={index} className="top-item">
+                        <span className="rank">{index + 1}</span>
+                        <span className="name">{track.name}</span>
+                        <span className="count">{track.play_count} plays</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -142,7 +171,6 @@ const Analysis: React.FC = () => {
                   <Clock size={24} />
                   <div>
                     <h4>Duração Média</h4>
-                    {/* AQUI ESTÁ A CORREÇÃO DE EXIBIÇÃO: */}
                     <p>{formatDuration(analysis.listening_patterns.avg_session_duration)}</p>
                   </div>
                 </div>

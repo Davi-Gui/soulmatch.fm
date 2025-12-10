@@ -22,7 +22,7 @@ Responder à seguinte pergunta de pesquisa:
 ## Tecnologias
 
 ### Backend
-- **Python 3.9+**
+- **Python 3.11**
 - **FastAPI** - Framework web moderno e rápido
 - **SQLAlchemy** - ORM para banco de dados
 - **PostgreSQL** - Banco de dados principal
@@ -81,7 +81,7 @@ soulmatch.fm/
 ## ⚙️ Como Executar
 
 ### Pré-requisitos
-- Python 3.9+
+- Python 3.9 - 3.11
 - Node.js 16+
 - PostgreSQL 12+
 - Conta no Spotify Developer
