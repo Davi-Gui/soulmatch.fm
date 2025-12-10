@@ -81,7 +81,7 @@ soulmatch.fm/
 ## ⚙️ Como Executar
 
 ### Pré-requisitos
-- Python 3.9+
+- Python 3.9 - 3.11
 - Node.js 16+
 - PostgreSQL 12+
 - Conta no Spotify Developer
