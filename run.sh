@@ -57,12 +57,9 @@ pushd "$BACKEND_DIR" >/dev/null
 # Modo pyenv
 if [ "$USING_PYENV" -eq 1 ]; then
   echo "Detectado pyenv com '.python-version' = venv"
-  # Garante que a versão local está setada para 'venv'
   pyenv local venv
-  # Checa se o python atual é o do pyenv e não o do sistema
   check_python_env
 
-  # Instala deps
   if [ -f "requirements.txt" ]; then
     pip install --upgrade pip
     pip install -r requirements.txt
@@ -71,17 +68,13 @@ if [ "$USING_PYENV" -eq 1 ]; then
   fi
 else
   echo "Usando venv padrão (conforme README)"
-  # Cria venv se não existir
   if [ ! -d "venv" ]; then
     python -m venv venv
   fi
-  # Ativa venv
   # shellcheck disable=SC1091
   source venv/bin/activate
-  # Checa se não é python do sistema
   check_python_env
 
-  # Instala deps
   if [ -f "requirements.txt" ]; then
     pip install --upgrade pip
     pip install -r requirements.txt
@@ -90,11 +83,9 @@ else
   fi
 fi
 
-# Docker services (DB)
 echo "==> Subindo containers Docker..."
 docker-compose up -d
 
-# .env
 if [ ! -f ".env" ]; then
   if [ -f "env.example" ]; then
     cp env.example .env
@@ -104,19 +95,16 @@ if [ ! -f ".env" ]; then
   fi
 fi
 
-# Inicializar DB se existir script
 if [ -f "init_db.py" ]; then
   echo "==> Inicializando Banco de Dados..."
   python init_db.py || echo "Aviso: init_db.py falhou ou já inicializado."
 fi
 
-# Iniciar backend
 echo "==> Iniciando Backend (FastAPI)"
 python run.py &
 BACKEND_PID=$!
 popd >/dev/null
 
-# Frontend setup
 echo "==> Configurando Frontend"
 pushd "$FRONTEND_DIR" >/dev/null
 if [ -f "package.json" ]; then
@@ -134,3 +122,8 @@ popd >/dev/null
 echo "==> Backend PID: $BACKEND_PID | Frontend PID: $FRONTEND_PID"
 echo "Logs backend: tail -f $BACKEND_DIR/app.log (se configurado) ou veja o terminal."
 echo "Para parar: kill $BACKEND_PID $FRONTEND_PID"
+
+# Cria arquivo simples com os PIDs (exatamente duas linhas: backend=pid e forntend=pid)
+echo "backend=${BACKEND_PID}" > "$ROOT_DIR/pids.txt"
+echo "frontend=${FRONTEND_PID}" >> "$ROOT_DIR/pids.txt"
+echo "Arquivo de PIDs criado em: $ROOT_DIR/pids.txt"
