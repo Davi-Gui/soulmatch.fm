@@ -30,3 +30,4 @@ backend/.cache
 
 backend/.cache/
 backend/data/spotify_features.csv
+pids.txt
